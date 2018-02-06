@@ -4,16 +4,16 @@ module.exports = (string) => {
   let results = [];
   let variables = string.split(' ');
   for (let variable of variables) {
-    variable.trim();
+    let raw = variable.trim();
     if (variable.startsWith('<') && variable.endsWith('>')) {
       variable = variable.replace('<', '').replace('>', '');
-      results.push(new Variable({name: variable, required: true}));
+      results.push(new Variable({name: variable, raw, required: true}));
     } else if (variable.startsWith('[') && variable.endsWith('...]')) {
       variable = variable.replace('[', '').replace('...]', '');
-      results.push(new Variable({name: variable, array: true}));
+      results.push(new Variable({array: true, name: variable, raw}));
     } else if (variable.startsWith('[') && variable.endsWith(']')) {
       variable = variable.replace('[', '').replace(']', '');
-      results.push(new Variable({name: variable}));
+      results.push(new Variable({name: variable, raw}));
     } else {
       throw `Unrecognized variable description: ${variable}`;
     };

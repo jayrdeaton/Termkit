@@ -1,20 +1,22 @@
 // Termikit Comterm Termcom?
 
 let models = require('./models'),
-  Command = models.Command;
+  Command = models.Command,
+  Option = models.Option;
 
 let base;
 
-let command = (name, description, variables) => {
-  return new Command(name, description, variables);
+let command = (name, variables, info) => {
+  let command = new Command({name, variables, info});
+  if (!base) base = command;
+  return command;
+};
+let option = (short, long, variables, info) => {
+  return new Option({short, long, variables, info});
 };
 
 let parse = (array) => {
   return base.parse(array);
 };
 
-let program = (description, variables) => {
-  return base = new Command(null, description, variables);
-};
-
-module.exports = { command, parse, program };
+module.exports = { command, option, parse };

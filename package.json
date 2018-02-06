@@ -1,7 +1,7 @@
 {
-  "name": "term-kit",
+  "name": "termkit",
   "version": "1.0.0",
-  "description": "Terminal command constructor kit",
+  "description": "Terminal command constructor and parser kit",
   "main": "index.js",
   "scripts": {
     "test": "node test.js"
@@ -10,7 +10,9 @@
     "terminal",
     "command",
     "line",
-    "constructor"
+    "input",
+    "constructor",
+    "parser"
   ],
   "author": "Jay Deaton",
   "license": "ISC",

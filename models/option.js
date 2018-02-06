@@ -2,15 +2,21 @@ let helpers = require('../helpers'),
   getVariables = helpers.getVariables;
 
 module.exports = class Option {
-  constructor(short, long, description, variables) {
+  constructor(data) {
     this.short = null;
     this.long = null;
-    this.description = null;
+    this.info = null;
     this.variables = null;
 
-    if (short) this.short = short;
-    if (long) this.long = long;
-    if (description) this.description = description;
-    if (variables) this.variables = getVariables(variables);
+    if (!data) return;
+
+    if (data.short) this.short = data.short;
+    if (data.long) this.long = data.long;
+    if (data.info) this.info = data.info;
+    if (data.variables) this.variables = getVariables(data.variables);
   };
+  description(string) {
+    this.info = string;
+    return this;
+  }
 };

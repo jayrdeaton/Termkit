@@ -20,7 +20,7 @@ let program = term.command('appName')
     console.log('Program with options: \n', options, '\n');
   })
   .commands([
-    term.command('one', null, 'Description of one')
+    term.command('one', '[reqA] [reqB]', 'Description of one')
     .option('a', 'array', '[arr...]', 'Option with array variable')
     .option('r', 'required', '<req>', 'Option with required variable')
     .option('o', 'optional', '[opt]', 'Option with optional variable')
@@ -98,6 +98,10 @@ term.parse('_ _ dir -r reqA reqB -a arr1 arr2 arr3 -o optional one fail'.split('
 term.parse('_ _ two four -a arr0 arr1 arr2 -r required -ob'.split(' '));
 term.parse('_ _ shortcut'.split(' '));
 term.parse('_ _ help'.split(' '));
+term.parse('_ _ two three help'.split(' '));
 term.parse('_ _ two help'.split(' '));
+term.parse('_ _ two four help'.split(' '));
 term.parse('_ _ two required four optionalA optionalB'.split(' '));
 term.parse('_ _ two required four optionalA'.split(' '));
+
+// term.parse('_ _ one requiredA requiredB'.split(' '));

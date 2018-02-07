@@ -61,6 +61,7 @@ module.exports = class Command {
   help() {
     let table = [];
     let title = this.name || 'Program';
+    title = `\n${title}`;
     if (this.variables) {
       for (let variable of this.variables) {
         title += ` ${variable.raw}`;
@@ -160,8 +161,7 @@ module.exports = class Command {
         options = {};
         command = newCommand;
         let newVariables;
-        [err, newVariables] = findCommandVariables(array, command);
-        if (err && array[0] !== 'help') command.actionFunction(err);
+        if (!array.includes('help')) [err, newVariables] = findCommandVariables(array, command);
         if (newVariables) Object.assign(options, newVariables);
       };
     };

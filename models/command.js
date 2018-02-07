@@ -218,6 +218,7 @@ let findOption = (string, options) => {
 let findCommandVariables = (array, command) => {
   let [err, variables] = findVariables(null, array, command.variables, command.commandStrings);
   if (err) return [err];
+  if (variables[null]) variables = variables[null];
   for (let key of Object.keys(variables)) {
     if (variables[key] === true) delete variables[key];
   };

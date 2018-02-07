@@ -73,7 +73,7 @@ let program = term.command('appName')
           console.log('custom usage printout')
         })
       ]),
-      term.command('four', null, 'Description of four')
+      term.command('four', '[optA] [optB]', 'Description of four')
       .option('a', 'array', '[arr...]', 'Option with array variable')
       .option('r', 'required', '<req>', 'Option with required variable')
       .option('o', 'optional', '[opt]', 'Option with optional variable')
@@ -99,3 +99,5 @@ term.parse('_ _ two four -a arr0 arr1 arr2 -r required -ob'.split(' '));
 term.parse('_ _ shortcut'.split(' '));
 term.parse('_ _ help'.split(' '));
 term.parse('_ _ two help'.split(' '));
+term.parse('_ _ two required four optionalA optionalB'.split(' '));
+term.parse('_ _ two required four optionalA'.split(' '));

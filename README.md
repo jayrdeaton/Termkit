@@ -75,7 +75,7 @@ term.command('example', <var>)
 After your done constructing your CLI flow, parse the input
 
 ```
-term.parse(process.argv);
+program.parse(process.argv);
 ```
 
 Stay tuned for more

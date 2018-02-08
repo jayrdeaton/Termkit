@@ -11,10 +11,7 @@ let program = term.command('appName')
     term.option('b', 'boolean', null, 'Option with no variable')
   ])
   .action((err, options) => {
-    if (err) {
-      console.log('\u001b[31mError:\u001b[39m', err);
-      return;
-    };
+    if (err) return console.log(`\u001b[31m${err.name}:\u001b[39m ${err.message}`);
     let source = options._source;
     options._source = source.join(' ');
     console.log('Program with options: \n', options, '\n');
@@ -26,10 +23,7 @@ let program = term.command('appName')
     .option('o', 'optional', '[opt]', 'Option with optional variable')
     .option('b', 'boolean', null, 'Option with no variable')
     .action((err, options) => {
-      if (err) {
-        console.log('\u001b[31mError:\u001b[39m', err);
-        return;
-      };
+      if (err) return console.log(`\u001b[31m${err.name}:\u001b[39m ${err.message}`);
       let source = options._source;
       options._source = source.join(' ');
       console.log('Command One with options: \n', options, '\n');
@@ -40,12 +34,8 @@ let program = term.command('appName')
     .option('o', 'optional', '[opt]', 'Option with optional variable')
     .option('b', 'boolean', null, 'Option with no variable')
     .action((err, options) => {
-      if (err) {
-        console.log('\u001b[31mError:\u001b[39m', err);
-        return;
-      };
+      if (err) return console.log(`\u001b[31m${err.name}:\u001b[39m ${err.message}`);
       let source = options._source;
-      console.log(options);
       options._source = source.join(' ');
       console.log('Command Two with options: \n', options, '\n');
     })
@@ -56,10 +46,7 @@ let program = term.command('appName')
       .option('o', 'optional', '[opt]', 'Option with optional variable')
       .option('b', 'boolean', null, 'Option with no variable')
       .action((err, options) => {
-        if (err) {
-          console.log('\u001b[31mError:\u001b[39m', err);
-          return;
-        };
+        if (err) return console.log(`\u001b[31m${err.name}:\u001b[39m ${err.message}`);
         let source = options._source;
         options._source = source.join(' ');
         console.log('Command Three with options: \n', options, '\n');
@@ -67,10 +54,7 @@ let program = term.command('appName')
       .commands([
         term.command('help')
         .action((err, options) => {
-          if (err) {
-            console.log('\u001b[31mError:\u001b[39m', err);
-            return;
-          };
+          if (err) return console.log(`\u001b[31m${err.name}:\u001b[39m ${err.message}`);
           console.log('custom usage printout')
         })
       ]),
@@ -80,10 +64,7 @@ let program = term.command('appName')
       .option('o', 'optional', '[opt]', 'Option with optional variable')
       .option('b', 'boolean', null, 'Option with no variable')
       .action((err, options) => {
-        if (err) {
-          console.log('\u001b[31mError:\u001b[39m', err);
-          return;
-        };
+        if (err) return console.log(`\u001b[31m${err.name}:\u001b[39m ${err.message}`);
         let source = options._source;
         options._source = source.join(' ');
         console.log('Command Four with options: \n', options, '\n');
@@ -91,7 +72,8 @@ let program = term.command('appName')
     ])
   ]);
 
-term.parse('_ _ -a arr0 arr1 arr2 -r requiredA requiredB -o -b'.split(' '));
+term.parse('_ _ --array arr0 arr1 arr2 --required req1 req2 --optional test --boolean'.split(' '));
+term.parse('_ _ -a arr0 arr1 arr2 -r req1 req2 -o -b'.split(' '));
 term.parse('_ _ test -r requiredA requiredB one -r requiredC'.split(' '));
 term.parse('_ _ test -a arr0 arr1 one -br required'.split(' '));
 term.parse('_ _ -r reqA reqB'.split(' '));

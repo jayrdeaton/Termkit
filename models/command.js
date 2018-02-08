@@ -67,6 +67,7 @@ module.exports = class Command {
         title += ` ${variable.raw}`;
       };
     };
+    if (this.options) title += ' [options]';
     let info = this.info;
     table.push({ title, info, data: [] });
     if (this.commandsArray.length > 0) {
@@ -102,6 +103,7 @@ module.exports = class Command {
     let lines = [];
     for (let section of table) {
       lines.push(section.title);
+      if (section.versionString) lines.push(`v${section.versionString}`)
       if (section.info) lines.push(section.info);
       for (let array of section.data) {
         let line;
@@ -123,10 +125,14 @@ module.exports = class Command {
       console.log(line);
     };
   };
-  // get commands() {
-  //   return this.commandsArray;
-  // };
-  async parse (array) {
+  parse (array) {
+    try {
+      this.parseArray(array);
+    } catch (err) {
+      console.log(`\u001b[31m${err.name}:\u001b[39m ${err.message}`);
+    };
+  };
+  parseArray (array) {
     let command = this;
     let err;
     let result = {
@@ -135,38 +141,46 @@ module.exports = class Command {
     let options = {};
     let locations = array.splice(0, 2);
     let variables;
-    [err, variables] = findCommandVariables(array, command);
-    if (variables) Object.assign(options, variables);
-    if (err) {
-      command.actionFunction(err);
-      return;
+    try {
+      variables = findCommandVariables(array, command);
+    } catch(err) {
+      if (command.actionFunction) return command.actionFunction(err);
+      throw err;
     };
+    if (variables) Object.assign(options, variables);
     while (array.length > 0) {
       if (array[0].startsWith('-')) {
         let newOptions;
-        [err, newOptions] = findOptions(array, command);
-        if (err) {
-          command.actionFunction(err);
-          return;
+        try {
+          newOptions = findOptions(array, command);
+        } catch(err) {
+          if (command.actionFunction) return command.actionFunction(err);
+          throw err;
         };
         Object.assign(options, newOptions);
       } else {
         let newCommand;
-        [err, newCommand] = findCommand(array, command.commandsArray);
+        newCommand = findCommand(array, command.commandsArray);
         if (!newCommand && array[0] === 'help') return command.help();
-        if (!newCommand) return command.actionFunction(`Unknown command: ${array[0]}`);
+        if (!newCommand) return command.actionFunction(new SyntaxError(`Unknown command: ${array[0]}`));
         let name = command.name || '_base';
         if (!result._parents) result._parents = {};
         result._parents[name] = options;
         options = {};
         command = newCommand;
         let newVariables;
-        if (!array.includes('help')) [err, newVariables] = findCommandVariables(array, command);
+        if (!array.includes('help')) try {
+          findCommandVariables(array, command);
+        } catch(err) {
+          if (command.actionFunction) return command.actionFunction(err);
+          throw err;
+        };
         if (newVariables) Object.assign(options, newVariables);
       };
     };
     Object.assign(result, options);
-    command.actionFunction(null, result);
+    if (command.actionFunction) return command.actionFunction(null, result);
+    throw new Error(`No action for command: ${command.name || '_base'}`);
   };
 };
 
@@ -175,10 +189,10 @@ let findCommand = (array, commands) => {
   for (let command of commands) {
     if (array[0] === command.name) {
       array.shift();
-      return [null, command];
+      return command;
     };
   };
-  return [];
+  return null;
 };
 let findOptions = (array, command) => {
   let options = command.optionsArray;
@@ -188,25 +202,35 @@ let findOptions = (array, command) => {
       let string = array.shift();
       string = string.replace('--', '');
       let option = findOption(string, options);
-      if (!option) return [`Unknown Option: --${string}`];
-      let [err, vars] = findVariables(option.long, array, option.variables, command.commandStrings);
+      if (!option) throw new Error(`Unknown Option: --${string}`);
+      let vars;
+      try {
+        vars = findVariables(option.long, array, option.variables, command.commandStrings);
+      } catch(err) {
+        err.message += ` for --${option.long}`;
+        throw err
+      };
       Object.assign(result, vars);
-      if (err) return [`${err} for: --${option.long}`];
     } else {
       while (array.length > 0 && array[0].startsWith('-')) {
         let string = array.shift();
         let substring = string.slice(1, 2);
         let option = findOption(substring, options);
-        if (!option) return [`Unknown Option: -${substring}`];
+        if (!option) throw new Error(`Unknown Option: -${substring}`);
         string = string.replace(substring, '');
         if (string !== '-') array.unshift(string);
-        let [err, vars] = findVariables(option.long, array, option.variables, command.commandStrings);
-        if (err) return [`${err} for: --${option.long}`];
+        let vars;
+        try {
+          vars = findVariables(option.long, array, option.variables, command.commandStrings);
+        } catch(err) {
+          err.message += ` for --${option.long}`;
+          throw err;
+        };
         Object.assign(result, vars);
       };
     };
   };
-  return [null, result];
+  return result;
 };
 let findOption = (string, options) => {
   for (let option of options) {
@@ -216,25 +240,23 @@ let findOption = (string, options) => {
   };
 };
 let findCommandVariables = (array, command) => {
-  let [err, variables] = findVariables(null, array, command.variables, command.commandStrings);
-  if (err) return [err];
+  let variables = findVariables(null, array, command.variables, command.commandStrings);
   if (variables[null]) variables = variables[null];
   for (let key of Object.keys(variables)) {
     if (variables[key] === true) delete variables[key];
   };
-  if (Object.keys(variables).length === 0) return [err, null];
-  return [err, variables];
+  if (Object.keys(variables).length === 0) return null;
+  return variables;
 };
 let findVariables = (base, array, variables, commands) => {
   let result = {};
   if (!variables) {
     if (base) result[base] = true;
-    return [null, result];
+    return result;
   };
   if (variables.length > 1) result[base] = {};
   for (let variable of variables) {
-    let [err, newVar] = findVariable(array, variable, commands);
-    if (err) return [err];
+    let newVar = findVariable(array, variable, commands);
     if (variables.length > 1) {
       result[base][variable.name] = newVar;
     } else {
@@ -245,7 +267,7 @@ let findVariables = (base, array, variables, commands) => {
       };
     };
   };
-  return [null, result];
+  return result;
 };
 let findVariable = (array, variable, commands) => {
   let result;
@@ -258,7 +280,7 @@ let findVariable = (array, variable, commands) => {
       result.push(array.shift());
     };
   };
-  if (!result && variable.required) return [`Missing required variable: ${variable.name}`];
+  if (!result && variable.required) throw new Error(`Missing required variable <${variable.name}>`);
   if (!result) result = true;
-  return [null, result];
+  return result;
 };

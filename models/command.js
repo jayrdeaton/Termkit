@@ -126,7 +126,7 @@ module.exports = class Command {
   // get commands() {
   //   return this.commandsArray;
   // };
-  parse(array) {
+  async parse (array) {
     let command = this;
     let err;
     let result = {

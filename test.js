@@ -103,5 +103,3 @@ term.parse('_ _ two help'.split(' '));
 term.parse('_ _ two four help'.split(' '));
 term.parse('_ _ two required four optionalA optionalB'.split(' '));
 term.parse('_ _ two required four optionalA'.split(' '));
-
-// term.parse('_ _ one requiredA requiredB'.split(' '));

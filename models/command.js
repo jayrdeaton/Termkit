@@ -130,7 +130,7 @@ module.exports = class Command {
     let command = this;
     let err;
     let result = {
-      // _source: Array.from(array)
+      _source: Array.from(array)
     };
     let options = {};
     let locations = array.splice(0, 2);

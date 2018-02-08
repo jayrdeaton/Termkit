@@ -45,6 +45,7 @@ let program = term.command('appName')
         return;
       };
       let source = options._source;
+      console.log(options);
       options._source = source.join(' ');
       console.log('Command Two with options: \n', options, '\n');
     })

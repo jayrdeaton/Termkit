@@ -73,20 +73,23 @@ module.exports = class Command {
     if (this.commandsArray.length > 0) {
       let section = { title: 'Commands', data: []};
       for (let command of this.commandsArray) {
-        let left = command.name;
-        if (command.variables) for (let variable of command.variables) left += ` ${variable.raw}`;
-        let right = command.info;
-        section.data.push([left, right]);
+        let name = command.name;
+        if (command.variables) for (let variable of command.variables) name += ` ${variable.raw}`;
+        let info = command.info;
+        section.data.push([name, info]);
       };
       table.push(section);
     };
     if (this.optionsArray.length > 0) {
       let section = { title: 'Options', data: []};
       for (let option of this.optionsArray) {
-        let left = `-${option.short}, --${option.long}`;
-        if (option.variables) for (let variable of option.variables) left += ` ${variable.raw}`;
-        let right = option.info;
-        section.data.push([left, right]);
+        let name = '';
+        if (option.short) name = `-${option.short}`;
+        if (option.short && option.long) { name += ', ' };
+        if (option.long) name += `--${option.long}`;
+        if (option.variables) for (let variable of option.variables) name += ` ${variable.raw}`;
+        let info = option.info || '';
+        section.data.push([name, info]);
       };
       table.push(section);
     };
@@ -112,7 +115,7 @@ module.exports = class Command {
             while (string.length < padding[index]) string += ' ';
           };
           if (line) {
-            line += `    ${string}`;
+            line += `  ${string}`;
           } else {
             line = string;
           };

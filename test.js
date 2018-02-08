@@ -60,8 +60,8 @@ let program = term.command('appName')
       ]),
       term.command('four', '[optA] [optB]', 'Description of four')
       .option('a', 'array', '[arr...]', 'Option with array variable')
-      .option('r', 'required', '<req>', 'Option with required variable')
-      .option('o', 'optional', '[opt]', 'Option with optional variable')
+      .option(null, 'required', '<req>', 'Option with required variable')
+      .option('o', null, '[opt]', 'Option with optional variable')
       .option('b', 'boolean', null, 'Option with no variable')
       .action((err, options) => {
         if (err) return console.log(`\u001b[31m${err.name}:\u001b[39m ${err.message}`);

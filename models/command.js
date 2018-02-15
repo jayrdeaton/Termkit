@@ -173,7 +173,7 @@ module.exports = class Command {
         command = newCommand;
         let newVariables;
         if (!array.includes('help')) try {
-          findCommandVariables(array, command);
+          newVariables = findCommandVariables(array, command);
         } catch(err) {
           if (command.actionFunction) return command.actionFunction(err);
           throw err;

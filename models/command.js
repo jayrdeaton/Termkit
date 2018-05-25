@@ -129,13 +129,6 @@ module.exports = class Command {
     };
   };
   parse (array) {
-    try {
-      this.parseArray(array);
-    } catch (err) {
-      console.log(`\u001b[31m${err.name}:\u001b[39m ${err.message}`);
-    };
-  };
-  parseArray (array) {
     let command = this;
     let err;
     let result = {

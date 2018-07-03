@@ -137,45 +137,30 @@ module.exports = class Command {
     let options = {};
     let locations = array.splice(0, 2);
     let variables;
-    try {
-      variables = findCommandVariables(array, command);
-    } catch(err) {
-      if (command.actionFunction) return command.actionFunction(err);
-      throw err;
-    };
+    variables = findCommandVariables(array, command);
     if (variables) Object.assign(options, variables);
     while (array.length > 0) {
       if (array[0].startsWith('-')) {
         let newOptions;
-        try {
-          newOptions = findOptions(array, command);
-        } catch(err) {
-          if (command.actionFunction) return command.actionFunction(err);
-          throw err;
-        };
+        newOptions = findOptions(array, command);
         Object.assign(options, newOptions);
       } else {
         let newCommand;
         newCommand = findCommand(array, command.commandsArray);
         if (!newCommand && array[0] === 'help') return command.help();
-        if (!newCommand) return command.actionFunction(new SyntaxError(`Unknown command: ${array[0]}`));
+        if (!newCommand) throw new SyntaxError(`Unknown command: ${array[0]}`);
         let name = command.name || '_base';
         if (!result._parents) result._parents = {};
         result._parents[name] = options;
         options = {};
         command = newCommand;
         let newVariables;
-        if (!array.includes('help')) try {
-          newVariables = findCommandVariables(array, command);
-        } catch(err) {
-          if (command.actionFunction) return command.actionFunction(err);
-          throw err;
-        };
+        if (!array.includes('help')) newVariables = findCommandVariables(array, command);
         if (newVariables) Object.assign(options, newVariables);
       };
     };
     Object.assign(result, options);
-    if (command.actionFunction) return command.actionFunction(null, result);
+    if (command.actionFunction) return command.actionFunction(result);
     throw new Error(`No action for command: ${command.name || '_base'}`);
   };
 };

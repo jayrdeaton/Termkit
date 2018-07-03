@@ -128,7 +128,7 @@ module.exports = class Command {
       console.log(line);
     };
   };
-  parse (array) {
+  async parse (array) {
     let command = this;
     let err;
     let result = {

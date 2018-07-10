@@ -61,7 +61,7 @@ module.exports = class Command {
   };
   help(source) {
     let table = [];
-    let program = this.name.toLowerCase() || 'Program';
+    let program = this.name || 'Program';
     if (this.variables) {
       for (let variable of this.variables) {
         program += ` ${variable.raw}`;
@@ -151,7 +151,7 @@ module.exports = class Command {
         if (!newCommand) throw new SyntaxError(`Unknown command: ${array[0]}`);
         let name = command.name || '_base';
         if (!result._parents) result._parents = {};
-        result._parents[name.toLowerCase()] = options;
+        result._parents[name] = options;
         options = {};
         command = newCommand;
         let newVariables;

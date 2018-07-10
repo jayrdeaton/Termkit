@@ -1,4 +1,5 @@
 let Option = require('./option'),
+  cosmetic = require('cosmetic'),
   helpers = require('../helpers'),
   getVariables = helpers.getVariables;
 
@@ -58,28 +59,17 @@ module.exports = class Command {
     this.versionString = version;
     return this;
   };
-  help() {
+  help(source) {
     let table = [];
-    let title = this.name || 'Program';
-    title = `\n${title}`;
+    let program = this.name.toLowerCase() || 'Program';
     if (this.variables) {
       for (let variable of this.variables) {
-        title += ` ${variable.raw}`;
+        program += ` ${variable.raw}`;
       };
     };
-    if (this.options) title += ' [options]';
-    let info = this.info;
-    table.push({ title, info, data: [] });
-    if (this.commandsArray.length > 0) {
-      let section = { title: 'Commands', data: []};
-      for (let command of this.commandsArray) {
-        let name = command.name;
-        if (command.variables) for (let variable of command.variables) name += ` ${variable.raw}`;
-        let info = command.info;
-        section.data.push([name, info]);
-      };
-      table.push(section);
-    };
+    if (this.optionsArray.length > 0) program += ' [...options]';
+    table.push({ title: '\nCommand', info: program, data: [] });
+    if (this.info) table.push({ title: 'Info', info: this.info, data: [] });
     if (this.optionsArray.length > 0) {
       let section = { title: 'Options', data: []};
       for (let option of this.optionsArray) {
@@ -89,6 +79,16 @@ module.exports = class Command {
         if (option.long) name += `--${option.long}`;
         if (option.variables) for (let variable of option.variables) name += ` ${variable.raw}`;
         let info = option.info || '';
+        section.data.push([name, info]);
+      };
+      table.push(section);
+    };
+    if (this.commandsArray.length > 0) {
+      let section = { title: 'Subcommands', data: []};
+      for (let command of this.commandsArray) {
+        let name = command.name;
+        if (command.variables) for (let variable of command.variables) name += ` ${variable.raw}`;
+        let info = command.info;
         section.data.push([name, info]);
       };
       table.push(section);
@@ -105,7 +105,7 @@ module.exports = class Command {
     };
     let lines = [];
     for (let section of table) {
-      lines.push(section.title);
+      if (section.title) { lines.push(cosmetic.cyan.underline(section.title)) } else { lines.push('') };
       if (section.versionString) lines.push(`v${section.versionString}`)
       if (section.info) lines.push(section.info);
       for (let array of section.data) {
@@ -147,11 +147,11 @@ module.exports = class Command {
       } else {
         let newCommand;
         newCommand = findCommand(array, command.commandsArray);
-        if (!newCommand && array[0] === 'help') return command.help();
+        if (!newCommand && array[0] === 'help') return command.help(result._source);
         if (!newCommand) throw new SyntaxError(`Unknown command: ${array[0]}`);
         let name = command.name || '_base';
         if (!result._parents) result._parents = {};
-        result._parents[name] = options;
+        result._parents[name.toLowerCase()] = options;
         options = {};
         command = newCommand;
         let newVariables;

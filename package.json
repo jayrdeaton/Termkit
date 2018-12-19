@@ -4,7 +4,7 @@
   "description": "Terminal command constructor and parser kit",
   "main": "index.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node ./test/index.js"
   },
   "keywords": [
     "terminal",

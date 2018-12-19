@@ -1,6 +1,5 @@
-// Termikit Comterm Termcom?
-
-let { Command, Middleware, Option } = require('./models');
+const { models } = require('./src'),
+  { Command, Middleware, Option } = models;
 
 let base;
 

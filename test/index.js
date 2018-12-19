@@ -1,4 +1,4 @@
-let { command, middleware, option} = require('./');
+let { command, middleware, option} = require('../');
 
 let program = command('appName')
   .version(process.env.npm_package_version)
@@ -16,7 +16,7 @@ let program = command('appName')
   .action((options) => {
     let source = options._source;
     options._source = source.join(' ');
-    // console.log('Program with options: \n', options, '\n');
+    console.log('Program with options: \n', options, '\n');
   })
   .middlewares([
 
@@ -30,7 +30,7 @@ let program = command('appName')
     .action((options) => {
       let source = options._source;
       options._source = source.join(' ');
-      // console.log('Command One with options: \n', options, '\n');
+      console.log('Command One with options: \n', options, '\n');
     }),
     command('two', '<req>', 'Description of two')
     .option('a', 'array', '[arr...]', 'Option with array variable')
@@ -40,7 +40,7 @@ let program = command('appName')
     .action((options) => {
       let source = options._source;
       options._source = source.join(' ');
-      // console.log('Command Two with options: \n', options, '\n');
+      console.log('Command Two with options: \n', options, '\n');
     })
     .commands([
       command('three', null, 'Description of three')
@@ -51,12 +51,12 @@ let program = command('appName')
       .action((options) => {
         let source = options._source;
         options._source = source.join(' ');
-        // console.log('Command Three with options: \n', options, '\n');
+        console.log('Command Three with options: \n', options, '\n');
       })
       .commands([
         command('help')
         .action((options) => {
-          // console.log('custom usage printout')
+          console.log('custom usage printout')
         })
       ]),
       command('four', '[optA] [optB]', 'Description of four')
@@ -67,7 +67,7 @@ let program = command('appName')
       .action((options) => {
         let source = options._source;
         options._source = source.join(' ');
-        // console.log('Command Four with options: \n', options, '\n');
+        console.log('Command Four with options: \n', options, '\n');
       })
     ])
   ]);
@@ -81,9 +81,9 @@ program.parse('_ _ -r reqA reqB'.split(' '));
 program.parse('_ _ dir -r reqA reqB -a arr1 arr2 arr3 -o optional one fail'.split(' '));
 program.parse('_ _ two four -a arr0 arr1 arr2 -r required -ob'.split(' '));
 program.parse('_ _ shortcut'.split(' '));
-// program.parse('_ _ help'.split(' '));
-// program.parse('_ _ two three help'.split(' '));
-// program.parse('_ _ two help'.split(' '));
-// program.parse('_ _ two four help'.split(' '));
+program.parse('_ _ help'.split(' '));
+program.parse('_ _ two three help'.split(' '));
+program.parse('_ _ two help'.split(' '));
+program.parse('_ _ two four help'.split(' '));
 program.parse('_ _ two required four optionalA optionalB'.split(' '));
 program.parse('_ _ two required four optionalA'.split(' '));

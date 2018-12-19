@@ -10,6 +10,7 @@ module.exports = class Command {
     this.commandStrings = ['help'];
     this.info = null;
     this.name = null;
+    this.middlewaresArray = [];
     this.optionsArray = [];
     this.variables = null;
     this.versionString = null;
@@ -42,6 +43,16 @@ module.exports = class Command {
     this.commandsArray = commands
     for (let command of commands) {
       this.commandStrings.unshift(command.name);
+    };
+    return this;
+  };
+  middleware(middleware) {
+    this.middlewaresArray.push(middleware);
+    return this;
+  };
+  middlewares(middlewares) {
+    for (let middleware of middlewares) {
+      this.middlewaresArray.push(middleware);
     };
     return this;
   };

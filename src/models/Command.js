@@ -142,38 +142,42 @@ module.exports = class Command {
   async parse (array) {
     let command = this;
     let err;
-    let result = {
+    let options = {
       _source: Array.from(array)
     };
-    let options = {};
+    // let options = {};
     let locations = array.splice(0, 2);
     let variables;
     variables = findCommandVariables(array, command);
     if (variables) Object.assign(options, variables);
-    for (const middleware of command.middlewaresArray) await middleware(options);
     while (array.length > 0) {
       if (array[0].startsWith('-')) {
         let newOptions;
         newOptions = findOptions(array, command);
         Object.assign(options, newOptions);
       } else {
+        for (const middleware of command.middlewaresArray) await middleware(Object.assign({}, options));
         let newCommand;
         newCommand = findCommand(array, command.commandsArray);
-        if (!newCommand && array[0] === 'help') return command.help(result._source);
+        if (!newCommand && array[0] === 'help') return command.help(options._source);
         if (!newCommand) throw new SyntaxError(`Unknown command: ${array[0]}`);
         let name = command.name || '_base';
-        if (!result._parents) result._parents = {};
-        result._parents[name] = options;
-        options = {};
+        if (!options._parents) options._parents = {};
+        options._parents[name] = {};
+        for (const key of Object.keys(options)) {
+          if (!key.startsWith('_')) {
+            options._parents[name][key] = options[key];
+            delete options[key];
+          };
+        };
         command = newCommand;
         let newVariables;
         if (!array.includes('help')) newVariables = findCommandVariables(array, command);
         if (newVariables) Object.assign(options, newVariables);
-        for (const middleware of command.middlewaresArray) await middleware(options);
       };
     };
-    Object.assign(result, options);
-    if (command.actionFunction) return command.actionFunction(result);
+    for (const middleware of command.middlewaresArray) await middleware(Object.assign({}, options));
+    if (command.actionFunction) return command.actionFunction(Object.assign({}, options));
     throw new Error(`No action for command: ${command.name || '_base'}`);
   };
 };

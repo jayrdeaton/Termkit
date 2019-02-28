@@ -9,7 +9,7 @@ let command = (name, variables, info) => {
   return command;
 };
 let middleware = (action) => {
-  return new Middleware(action);
+  return action;
 };
 let option = (short, long, variables, info) => {
   return new Option({short, long, variables, info});

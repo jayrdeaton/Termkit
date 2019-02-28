@@ -150,6 +150,7 @@ module.exports = class Command {
     let variables;
     variables = findCommandVariables(array, command);
     if (variables) Object.assign(options, variables);
+    for (const middleware of command.middlewaresArray) await middleware(options);
     while (array.length > 0) {
       if (array[0].startsWith('-')) {
         let newOptions;
@@ -168,6 +169,7 @@ module.exports = class Command {
         let newVariables;
         if (!array.includes('help')) newVariables = findCommandVariables(array, command);
         if (newVariables) Object.assign(options, newVariables);
+        for (const middleware of command.middlewaresArray) await middleware(options);
       };
     };
     Object.assign(result, options);

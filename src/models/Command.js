@@ -156,7 +156,7 @@ module.exports = class Command {
         newOptions = findOptions(array, command);
         Object.assign(options, newOptions);
       } else {
-        for (const middleware of command.middlewaresArray) await middleware(Object.assign({}, options));
+        for (const middleware of command.middlewaresArray) await middleware(options);
         let newCommand;
         newCommand = findCommand(array, command.commandsArray);
         if (!newCommand && array[0] === 'help') return command.help(options._source);
@@ -176,8 +176,8 @@ module.exports = class Command {
         if (newVariables) Object.assign(options, newVariables);
       };
     };
-    for (const middleware of command.middlewaresArray) await middleware(Object.assign({}, options));
-    if (command.actionFunction) return command.actionFunction(Object.assign({}, options));
+    for (const middleware of command.middlewaresArray) await middleware(options);
+    if (command.actionFunction) return command.actionFunction(options);
     throw new Error(`No action for command: ${command.name || '_base'}`);
   };
 };

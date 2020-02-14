@@ -10,7 +10,7 @@ This is how to get started using Termkit
 
 Add this package to your project
 
-```
+```bash
 npm install --save termkit
 ```
 
@@ -18,43 +18,37 @@ npm install --save termkit
 
 Configure your command line program
 
-```
-let { command, option } = require('termkit');
+```node
+const { command, option } = require('termkit')
 
-let program = command('myApp')
+const program = command('my-program')
   .version('1.0.0')
-  .description('Here is my example layout')
+  .description('example program')
   .options([
     option('a', 'array', '[arr...]', 'Array variable'),
-    option('r', 'required', '<reqA> <reqB>', 'Required variable'),
-    option('o', 'optional', '[opt]', 'Optional variable'),
+    option('r', 'required', '<reqA> <reqB>', 'Two required variables'),
+    option('o', 'optional', '[opt]', 'One optional variable'),
     option('b', 'boolean', null, 'No variable')
   ])
-  .action((err, options) => {
-    if (err) return console.log(err);
-    console.log(options);
-    // Do some fancy stuff here
-  })
+  .middleware((options) => console.log('middleware is run before action, manipulate the options object as needed'))
+  .action((options) => console.log('run action with given options'))
   .commands([
     command('first')
-    .description('My first example nested command')
+    .description('first nested command')
     .options([
       // Same style options as before
     ])
-    .action((err, options) => {
-      if (err) return console.log(err);
-      console.log(options);
-      // Do some different fancy stuff here
-    })
+    .middleware((options) => console.log('middleware can be nested too'))
+    .action((options) => console.log('run action with given options'))
     .commands([
       // So on and so forth
     ])
   ])
 ```
 
-Command objects nest, and can have variables themselves
+Commands nest and can have variables themselves
 
-```
+```node
 command('example').commands([
   command('another', '[optional]'),
   command('another', '<required>'),
@@ -62,9 +56,9 @@ command('example').commands([
 ])
 ```
 
-All errors, variables, and options are passed into your action function.
+Variables, and options are passed into middleware and action functions.
 
-```
+```node
 command('example', <var>)
   .option('r', 'require', <req>, 'Another example')
   .action((err, data) => {
@@ -72,10 +66,14 @@ command('example', <var>)
   })
 ```
 
-After your done constructing your CLI flow, parse the input
+After completing constructing the CLI flow, parse the input and catch possible errors
 
-```
-program.parse(process.argv);
+```node
+try {
+  program.parse(process.argv)
+} catch(err) {
+  console.log(err)
+}
 ```
 
 Stay tuned for more

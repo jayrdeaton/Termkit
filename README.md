@@ -19,16 +19,16 @@ npm install --save termkit
 Configure your command line program
 
 ```
-let term = require('termkit');
+let { command, option } = require('termkit');
 
-let program = term.command('myApp')
+let program = command('myApp')
   .version('1.0.0')
   .description('Here is my example layout')
   .options([
-    term.option('a', 'array', '[arr...]', 'Array variable'),
-    term.option('r', 'required', '<reqA> <reqB>', 'Required variable'),
-    term.option('o', 'optional', '[opt]', 'Optional variable'),
-    term.option('b', 'boolean', null, 'No variable')
+    option('a', 'array', '[arr...]', 'Array variable'),
+    option('r', 'required', '<reqA> <reqB>', 'Required variable'),
+    option('o', 'optional', '[opt]', 'Optional variable'),
+    option('b', 'boolean', null, 'No variable')
   ])
   .action((err, options) => {
     if (err) return console.log(err);
@@ -36,7 +36,7 @@ let program = term.command('myApp')
     // Do some fancy stuff here
   })
   .commands([
-    term.command('first')
+    command('first')
     .description('My first example nested command')
     .options([
       // Same style options as before
@@ -55,17 +55,17 @@ let program = term.command('myApp')
 Command objects nest, and can have variables themselves
 
 ```
-term.command('example').commands([
-  term.command('another', '[optional]'),
-  term.command('another', '<required>'),
-  term.command('another', '[array...]')
+command('example').commands([
+  command('another', '[optional]'),
+  command('another', '<required>'),
+  command('another', '[array...]')
 ])
 ```
 
 All errors, variables, and options are passed into your action function.
 
 ```
-term.command('example', <var>)
+command('example', <var>)
   .option('r', 'require', <req>, 'Another example')
   .action((err, data) => {
     console.log(data.require)

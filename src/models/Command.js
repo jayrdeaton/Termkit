@@ -39,6 +39,10 @@ module.exports = class Command {
     this.actionFunction = actionFunction;
     return this;
   };
+  command(command) {
+    this.commandsArray.push(command)
+    return this;
+  };
   commands(commands) {
     this.commandsArray = commands
     for (let command of commands) {

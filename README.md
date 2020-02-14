@@ -9,7 +9,6 @@ This is how to get started using Termkit
 ### Installing
 
 Add this package to your project
-
 ```bash
 npm install --save termkit
 ```
@@ -17,19 +16,16 @@ npm install --save termkit
 ### Using
 
 Configure your command line program
-
 ```node
-const { command, option } = require('termkit')
+const { command, middleware, option } = require('termkit')
 
-const program = command('my-program')
+const program = command('example')
   .version('1.0.0')
   .description('example program')
-  .options([
-    option('a', 'array', '[arr...]', 'Array variable'),
-    option('r', 'required', '<reqA> <reqB>', 'Two required variables'),
-    option('o', 'optional', '[opt]', 'One optional variable'),
-    option('b', 'boolean', null, 'No variable')
-  ])
+  .option('a', 'array', '[arr...]', 'Array variable')
+  .option('r', 'required', '<reqA> <reqB>', 'Two required variables')
+  .option('o', 'optional', '[opt]', 'One optional variable')
+  .option('b', 'boolean', null, 'No variable')
   .middleware((options) => console.log('middleware is run before action, manipulate the options object as needed'))
   .action((options) => console.log('run action with given options'))
   .commands([
@@ -46,8 +42,23 @@ const program = command('my-program')
   ])
 ```
 
-Commands nest and can have variables themselves
+Alternatively supply options and middlewares to command in arrays
+```node
+command('example')
+  .options([
+    option('a', 'array', '[arr...]', 'Array variable'),
+    option('r', 'required', '<reqA> <reqB>', 'Two required variables'),
+    option('o', 'optional', '[opt]', 'One optional variable'),
+    option('b', 'boolean', null, 'No variable')
+  ])
+  .middlewares([
+    middleware(() => console.log(1)),
+    middleware(() => console.log(2)),
+    middleware(() => console.log(3))
+  ])
+```
 
+Commands nest and can have variables themselves
 ```node
 command('example').commands([
   command('another', '[optional]'),
@@ -57,23 +68,29 @@ command('example').commands([
 ```
 
 Variables, and options are passed into middleware and action functions.
-
 ```node
 command('example', <var>)
   .option('r', 'require', <req>, 'Another example')
-  .action((err, data) => {
-    console.log(data.require)
+  .middleware(options) => {
+    console.log(options.require)
+  })
+  .action((options) => {
+    console.log(options.require)
   })
 ```
 
 After completing constructing the CLI flow, parse the input and catch possible errors
-
 ```node
 try {
   program.parse(process.argv)
 } catch(err) {
   console.log(err)
 }
+```
+
+Built in terminal help usage function
+```node
+  program.parse('_ _ help'.split(' '))
 ```
 
 Stay tuned for more

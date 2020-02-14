@@ -148,7 +148,7 @@ module.exports = class Command {
     // let options = {};
     let locations = array.splice(0, 2);
     let variables;
-    variables = findCommandVariables(array, command);
+    if (!array.includes('help')) variables = findCommandVariables(array, command);
     if (variables) Object.assign(options, variables);
     while (array.length > 0) {
       if (array[0].startsWith('-')) {

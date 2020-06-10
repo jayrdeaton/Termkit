@@ -1,7 +1,7 @@
 const { is, isnt } = require('amprisand'),
-  { command, option} = require('../../');
+  { command, option} = require('../../')
 
-let program, output;
+let program, output
 
 describe('middleware', () => {
   describe('program = command()', () => {
@@ -26,36 +26,36 @@ describe('middleware', () => {
           ])
           .middleware(async (options) => await output.push({ name: 'nested middleware', options }))
           .action(async(options) => await output.push({ name: 'nested action', options }))
-        ]);
-    });
-  });
+        ])
+    })
+  })
   describe('program.parse()', () => {
     it('middleware should be called before action', async () => {
-      output = [];
-      await program.parse('_ _'.split(' '));
+      output = []
+      await program.parse('_ _'.split(' '))
       output[0].name.is('middleware')
       output[1].name.is('action')
-    });
-  });
+    })
+  })
   describe('program.parse()', () => {
     it('parent middleware should be called first', async () => {
-      output = [];
-      await program.parse('_ _ nested'.split(' '));
+      output = []
+      await program.parse('_ _ nested'.split(' '))
       output[0].name.is('middleware')
       output[1].name.is('nested middleware')
       output[2].name.is('nested action')
-    });
-  });
+    })
+  })
   describe('program.parse()', () => {
     it('should get options and variables', async () => {
-      output = [];
-      await program.parse('_ _ test -r required nested -b'.split(' '));
+      output = []
+      await program.parse('_ _ test -r required nested -b'.split(' '))
       console.log(output)
       output[0].name.is('middleware')
       output[1].name.is('nested middleware')
       output[2].name.is('nested action')      // output[0].name.is('middleware')
       // output[1].name.is('nested middleware')
       // output[2].name.is('nested action')
-    });
-  });
-});
+    })
+  })
+})

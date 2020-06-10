@@ -1,5 +1,5 @@
 const config = require('./config'),
   helpers = require('./helpers'),
-  models = require('./models');
+  models = require('./models')
 
-module.exports = { config, helpers, models };
+module.exports = { config, helpers, models }

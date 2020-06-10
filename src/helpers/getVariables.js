@@ -1,22 +1,22 @@
-let Variable = require('../models/variable');
+let Variable = require('../models/variable')
 
 module.exports = (string) => {
-  let results = [];
-  let variables = string.split(' ');
+  let results = []
+  let variables = string.split(' ')
   for (let variable of variables) {
-    let raw = variable.trim();
+    let raw = variable.trim()
     if (variable.startsWith('<') && variable.endsWith('>')) {
-      variable = variable.replace('<', '').replace('>', '');
-      results.push(new Variable({name: variable, raw, required: true}));
+      variable = variable.replace('<', '').replace('>', '')
+      results.push(new Variable({name: variable, raw, required: true}))
     } else if (variable.startsWith('[') && variable.endsWith('...]')) {
-      variable = variable.replace('[', '').replace('...]', '');
-      results.push(new Variable({array: true, name: variable, raw}));
+      variable = variable.replace('[', '').replace('...]', '')
+      results.push(new Variable({array: true, name: variable, raw}))
     } else if (variable.startsWith('[') && variable.endsWith(']')) {
-      variable = variable.replace('[', '').replace(']', '');
-      results.push(new Variable({name: variable, raw}));
+      variable = variable.replace('[', '').replace(']', '')
+      results.push(new Variable({name: variable, raw}))
     } else {
-      throw `Unrecognized variable description: ${variable}`;
-    };
-  };
-  return results;
-};
+      throw `Unrecognized variable description: ${variable}`
+    }
+  }
+  return results
+}

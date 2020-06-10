@@ -1,4 +1,4 @@
 describe('program', () => {
-  require('./complex');
-  require('./middleware');
-});
+  require('./complex')
+  require('./middleware')
+})

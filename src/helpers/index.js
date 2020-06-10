@@ -1,3 +1,3 @@
-let getVariables = require('./getVariables');
+let getVariables = require('./getVariables')
 
-module.exports = { getVariables };
+module.exports = { getVariables }

@@ -1,6 +1,6 @@
 describe('models', () => {
-  require('./Command');
-  require('./Middleware');
-  require('./Option');
-  require('./Variable');
-});
+  require('./Command')
+  require('./Middleware')
+  require('./Option')
+  require('./Variable')
+})

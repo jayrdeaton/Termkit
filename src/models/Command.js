@@ -182,6 +182,7 @@ module.exports = class Command {
     }
     for (const middleware of command.middlewaresArray) await middleware(options)
     if (command.actionFunction) return command.actionFunction(options)
+    if (options._source.length == 2) return command.help(options._source)
     throw new Error(`No action for command: ${command.name || '_base'}`)
   }
 }

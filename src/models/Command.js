@@ -1,4 +1,4 @@
-let Option = require('./option'),
+let Option = require('./Option'),
   cosmetic = require('cosmetic'),
   helpers = require('../helpers'),
   getVariables = helpers.getVariables

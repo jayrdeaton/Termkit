@@ -144,13 +144,12 @@ module.exports = class Command {
     }
   }
   async parse (array) {
+    array.splice(0, 2)
     let command = this
     let err
     let options = {
       _source: Array.from(array)
     }
-    // let options = {}
-    let locations = array.splice(0, 2)
     let variables
     if (!array.includes('help')) variables = findCommandVariables(array, command)
     if (variables) Object.assign(options, variables)
@@ -160,7 +159,7 @@ module.exports = class Command {
         newOptions = findOptions(array, command)
         Object.assign(options, newOptions)
       } else {
-        for (const middleware of command.middlewaresArray) await middleware(options)
+        if (!array.includes('help')) for (const middleware of command.middlewaresArray) await middleware(options)
         let newCommand
         newCommand = findCommand(array, command.commandsArray)
         if (!newCommand && array[0] === 'help') return command.help(options._source)

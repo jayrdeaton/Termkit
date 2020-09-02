@@ -1,4 +1,4 @@
-let Variable = require('../models/variable')
+let Variable = require('../models/Variable')
 
 module.exports = (string) => {
   let results = []

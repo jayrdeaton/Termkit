@@ -1,22 +1,17 @@
 const { models } = require('./src'),
-  { Command, Middleware, Option } = models
+  { Command, Middleware, Option, Termkit } = models
 
 let base
+let command_defaults = {}
 
-let command = (name, variables, info) => {
-  let command = new Command({name, variables, info})
+const command = (name, variables, info) => {
+  const command = new Command(Object.assign({ name, variables, info }, command_defaults))
   if (!base) base = command
   return command
 }
-let middleware = (action) => {
-  return action
-}
-let option = (short, long, variables, info) => {
-  return new Option({short, long, variables, info})
-}
+const setDefaults = data => command_defaults = data
+const middleware = (data) => data
+const option = (short, long, variables, info) => new Option({ short, long, variables, info })
+const parse = (array) => base.parse(array)
 
-let parse = (array) => {
-  return base.parse(array)
-}
-
-module.exports = { command, middleware, option, parse }
+module.exports = { command, middleware, option, parse, setDefaults }

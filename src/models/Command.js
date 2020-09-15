@@ -20,6 +20,8 @@ module.exports = class Command {
     if (data.info) this.info = data.info
     if (data.name) this.name = data.name
     if (data.variables) this.variables = getVariables(data.variables)
+    if (data.middlewares) this.middlewaresArray = [...data.middlewares]
+    if (data.options) this.optionsArray = [...data.options]
   }
   description(info, description) {
     this.info = info
@@ -45,6 +47,7 @@ module.exports = class Command {
   }
   commands(commands) {
     this.commandsArray = commands
+    commands.map(c => this.commandStrings.unshift(c.name))
     for (let command of commands) {
       this.commandStrings.unshift(command.name)
     }
@@ -55,9 +58,7 @@ module.exports = class Command {
     return this
   }
   middlewares(middlewares) {
-    for (let middleware of middlewares) {
-      this.middlewaresArray.push(middleware)
-    }
+    this.middlewaresArray.push(...middlewares)
     return this
   }
   option(short, long, variables, info) {
@@ -65,9 +66,7 @@ module.exports = class Command {
     return this
   }
   options(options) {
-    for (let option of options) {
-      this.optionsArray.push(option)
-    }
+    this.optionsArray.push(...options)
     return this
   }
   version(version) {

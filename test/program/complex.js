@@ -1,5 +1,9 @@
 const { is, isnt } = require('amprisand'),
-  { command, middleware, option} = require('../../')
+  { command, middleware, option, setDefaults } = require('../../')
+
+// setDefaults({
+//   middlewares: [() => console.log('yooo')]
+// })
 
 let program
 
@@ -70,7 +74,7 @@ describe('complex', () => {
         error = err
       }
       isnt(error)
-      is (result)
+      is(result)
       result.command.is('app')
       // program.parse('_ _ -a arr0 arr1 arr2 -r req1 req2 -o -b'.split(' '))
       // program.parse('_ _ one testA testB'.split(' '))
@@ -97,7 +101,7 @@ describe('complex', () => {
         error = err
       }
       isnt(error)
-      is (result)
+      is(result)
       result.command.is('help')
     })
   })

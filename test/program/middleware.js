@@ -1,7 +1,13 @@
 const { is, isnt } = require('amprisand'),
-  { command, option} = require('../../')
+  { command, option, setDefaults } = require('../../')
 
 let program, output
+
+setDefaults({
+  middlewares: [
+    (options) => output ? output.push({ name: 'default', options }) : null
+  ]
+})
 
 describe('middleware', () => {
   describe('program = command()', () => {
@@ -33,27 +39,33 @@ describe('middleware', () => {
     it('middleware should be called before action', async () => {
       output = []
       await program.parse('_ _'.split(' '))
-      output[0].name.is('middleware')
-      output[1].name.is('action')
+      output[0].name.is('default')
+      output[1].name.is('middleware')
+      output[2].name.is('action')
     })
   })
   describe('program.parse()', () => {
     it('parent middleware should be called first', async () => {
       output = []
       await program.parse('_ _ nested'.split(' '))
-      output[0].name.is('middleware')
-      output[1].name.is('nested middleware')
-      output[2].name.is('nested action')
+      // hits default twice cause every command gets default, nested and top
+      output[0].name.is('default')
+      output[1].name.is('middleware')
+      output[2].name.is('default')
+      output[3].name.is('nested middleware')
+      output[4].name.is('nested action')
     })
   })
   describe('program.parse()', () => {
     it('should get options and variables', async () => {
       output = []
       await program.parse('_ _ test -r required nested -b'.split(' '))
-      console.log(output)
-      output[0].name.is('middleware')
-      output[1].name.is('nested middleware')
-      output[2].name.is('nested action')      // output[0].name.is('middleware')
+      // hits default twice cause every command gets default, nested and top
+      output[0].name.is('default')
+      output[1].name.is('middleware')
+      output[2].name.is('default')
+      output[3].name.is('nested middleware')
+      output[4].name.is('nested action')      // output[0].name.is('middleware')
       // output[1].name.is('nested middleware')
       // output[2].name.is('nested action')
     })

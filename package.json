@@ -1,6 +1,6 @@
 {
   "name": "termkit",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "description": "Terminal command constructor and parser kit",
   "main": "index.js",
   "scripts": {

@@ -92,6 +92,32 @@ describe('complex', () => {
       // program.parse('_ _ two required four optionalA'.split(' '))
     })
   })
+  describe('program.parse()', () => {
+    it('should run program', async () => {
+      let error, result
+      try {
+        result = await program.parse('_ _ req two req three -a arr0 arr1 arr2 -r required -ob'.split(' '))
+      } catch(err) {
+        error = err
+      }
+      isnt(error)
+      is(result)
+      result.command.is('three')
+    })
+  })
+  describe('program.parse()', () => {
+    it('should run program', async () => {
+      let error, result
+      try {
+        result = await program.parse('_ _ req two req three -a arr0 arr1 arr2 --required required -ob'.split(' '))
+      } catch(err) {
+        error = err
+      }
+      isnt(error)
+      is(result)
+      result.command.is('three')
+    })
+  })
   describe('program.parse(help)', () => {
     it('should run program', async () => {
       let error, result

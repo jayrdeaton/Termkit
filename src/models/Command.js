@@ -1,7 +1,6 @@
-let Option = require('./Option'),
+const Option = require('./Option'),
   cosmetic = require('cosmetic'),
-  helpers = require('../helpers'),
-  getVariables = helpers.getVariables
+  { findCommand, findCommandVariables, findOptions, getVariables } = require('../helpers')
 
 module.exports = class Command {
   constructor(data) {
@@ -183,105 +182,4 @@ module.exports = class Command {
     if (options._source.length == 2) return command.help(options._source)
     throw new Error(`No action for command: ${command.name || '_base'}`)
   }
-}
-
-let findCommand = (array, commands) => {
-  let result
-  for (let command of commands) {
-    if (array[0] === command.name) {
-      array.shift()
-      return command
-    }
-  }
-  return null
-}
-let findOptions = (array, command) => {
-  let options = command.optionsArray
-  let result = {}
-  while (array.length > 0 && array[0].startsWith('-')) {
-    if (array[0].startsWith('--')) {
-      let string = array.shift()
-      string = string.replace('--', '')
-      let option = findOption(string, options)
-      if (!option) throw new Error(`Unknown Option: --${string}`)
-      let vars
-      try {
-        vars = findVariables(option.long, array, option.variables, command.commandStrings)
-      } catch(err) {
-        err.message += ` for --${option.long}`
-        throw err
-      }
-      Object.assign(result, vars)
-    } else {
-      while (array.length > 0 && array[0].startsWith('-')) {
-        let string = array.shift()
-        let substring = string.slice(1, 2)
-        let option = findOption(substring, options)
-        if (!option) throw new Error(`Unknown Option: -${substring}`)
-        string = string.replace(substring, '')
-        if (string !== '-') array.unshift(string)
-        let vars
-        try {
-          vars = findVariables(option.long, array, option.variables, command.commandStrings)
-        } catch(err) {
-          err.message += ` for --${option.long}`
-          throw err
-        }
-        Object.assign(result, vars)
-      }
-    }
-  }
-  return result
-}
-let findOption = (string, options) => {
-  for (let option of options) {
-    if (option.short === string || option.long === string) {
-      return option
-    }
-  }
-}
-let findCommandVariables = (array, command) => {
-  let variables = findVariables(null, array, command.variables, command.commandStrings)
-  if (variables[null]) variables = variables[null]
-  for (let key of Object.keys(variables)) {
-    if (variables[key] === true) delete variables[key]
-  }
-  if (Object.keys(variables).length === 0) return null
-  return variables
-}
-let findVariables = (base, array, variables, commands) => {
-  let result = {}
-  if (!variables) {
-    if (base) result[base] = true
-    return result
-  }
-  if (variables.length > 1) result[base] = {}
-  for (let variable of variables) {
-    let newVar = findVariable(array, variable, commands)
-    if (variables.length > 1) {
-      result[base][variable.name] = newVar
-    } else {
-      if (base) {
-        result[base] = newVar
-      } else {
-        result[variable.name] = newVar
-      }
-    }
-  }
-  return result
-}
-let findVariable = (array, variable, commands) => {
-  let result
-  if (array.length > 0 && !array[0].startsWith('-') && !variable.array) {
-    if ((!commands.includes(array[0]) || variable.required) && array[0] !== 'help') result = array.shift()
-  } else if (array.length > 0 && variable.array) {
-    result = []
-    while(array.length > 0 && !array[0].startsWith('-')) {
-      if (commands.includes(array[0])) break
-      result.push(array.shift())
-    }
-  }
-  if (!result && variable.required) throw new Error(`Missing required variable <${variable.name}>`)
-  if (!result) result = true
-  return result
 }

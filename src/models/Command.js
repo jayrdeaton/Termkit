@@ -144,25 +144,17 @@ module.exports = class Command {
   async parse (array) {
     array.splice(0, 2)
     let command = this
-    let err
-    let options = {
-      _source: Array.from(array)
-    }
-    let variables
-    if (!array.includes('help')) variables = findCommandVariables(array, command)
-    if (variables) Object.assign(options, variables)
+    const options = { _source: Array.from(array) }
     while (array.length > 0) {
+      if (!array.includes('help')) findCommandVariables(array, command)
       if (array[0].startsWith('-')) {
-        let newOptions
-        newOptions = findOptions(array, command)
-        Object.assign(options, newOptions)
+        Object.assign(options, findOptions(array, command))
       } else {
         if (!array.includes('help')) for (const middleware of command.middlewaresArray) await middleware(options)
-        let newCommand
-        newCommand = findCommand(array, command.commandsArray)
+        const newCommand = findCommand(array, command.commandsArray)
         if (!newCommand && array[0] === 'help') return command.help(options._source)
         if (!newCommand) throw new SyntaxError(`Unknown command: ${array[0]}`)
-        let name = command.name || '_base'
+        const name = command.name || '_base'
         if (!options._parents) options._parents = {}
         options._parents[name] = {}
         for (const key of Object.keys(options)) {
@@ -172,9 +164,6 @@ module.exports = class Command {
           }
         }
         command = newCommand
-        let newVariables
-        if (!array.includes('help')) newVariables = findCommandVariables(array, command)
-        if (newVariables) Object.assign(options, newVariables)
       }
     }
     for (const middleware of command.middlewaresArray) await middleware(options)

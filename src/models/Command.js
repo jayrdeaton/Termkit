@@ -73,73 +73,51 @@ module.exports = class Command {
     return this
   }
   help(source) {
-    let table = []
+    const table = []
     let program = this.name || 'Program'
-    if (this.variables) {
-      for (let variable of this.variables) {
-        program += ` ${variable.raw}`
-      }
-    }
+    if (this.variables) for (const variable of this.variables) program += ` ${variable.raw}`
     if (this.optionsArray.length > 0) program += ' [...options]'
     table.push({ title: '\nCommand', info: program, data: [] })
     if (this.info) table.push({ title: 'Info', info: this.info, data: [] })
     if (this.optionsArray.length > 0) {
-      let section = { title: 'Options', data: []}
-      for (let option of this.optionsArray) {
+      const section = { title: 'Options', data: []}
+      for (const option of this.optionsArray) {
         let name = ''
         if (option.short) name = `-${option.short}`
-        if (option.short && option.long) { name += ', ' }
+        if (option.short && option.long) name += ', '
         if (option.long) name += `--${option.long}`
-        if (option.variables) for (let variable of option.variables) name += ` ${variable.raw}`
-        let info = option.info || ''
-        section.data.push([name, info])
+        if (option.variables) for (const variable of option.variables) name += ` ${variable.raw}`
+        section.data.push([name, option.info || ''])
       }
       table.push(section)
     }
     if (this.commandsArray.length > 0) {
-      let section = { title: 'Subcommands', data: []}
+      const section = { title: 'Subcommands', data: []}
       for (let command of this.commandsArray) {
         let name = command.name
-        if (command.variables) for (let variable of command.variables) name += ` ${variable.raw}`
-        let info = command.info
-        section.data.push([name, info])
+        if (command.variables) for (const variable of command.variables) name += ` ${variable.raw}`
+        section.data.push([name, command.info || ''])
       }
       table.push(section)
     }
-    let padding = {}
-    for (let section of table) {
-      for (let array of section.data) {
-        for (let [index, string] of array.entries()) {
-          if (!padding[index] || string.length > padding[index]) {
-            padding[index] = string.length
-          }
-        }
-      }
-    }
-    let lines = []
-    for (let section of table) {
-      if (section.title) { lines.push(cosmetic.cyan.underline(section.title)) } else { lines.push('') }
+    const padding = {}
+    for (const section of table) for (const array of section.data) for (const [index, string] of array.entries()) if (!padding[index] || string.length > padding[index]) padding[index] = string.length
+    const lines = []
+    for (const section of table) {
+      lines.push(section.title ? cosmetic.cyan.underline(section.title) : '')
       if (section.versionString) lines.push(`v${section.versionString}`)
       if (section.info) lines.push(section.info)
-      for (let array of section.data) {
-        let line
+      for (const array of section.data) {
+        let line = ''
         for (let [index, string] of array.entries()) {
-          if (padding[index] && padding[index] !== string.length) {
-            while (string.length < padding[index]) string += ' '
-          }
-          if (line) {
-            line += `  ${string}`
-          } else {
-            line = string
-          }
+          if (padding[index] && padding[index] !== string.length) while (string.length < padding[index]) string += ' '
+          line += line ? `  ${string}` : string
         }
         lines.push(line)
       }
       lines.push('')
     }
-    for (let line of lines) {
-      console.log(line)
-    }
+    for (const line of lines) console.log(line)
   }
   async parse (array) {
     array.splice(0, 2)

@@ -131,4 +131,17 @@ describe('complex', () => {
       result.command.is('help')
     })
   })
+  describe('program.parse(help)', () => {
+    it('should run program', async () => {
+      let error, result
+      try {
+        await program.parse('_ _ help'.split(' '))
+      } catch(err) {
+        error = err
+      }
+      isnt(error)
+      // is(result)
+      // result.command.is('help')
+    })
+  })
 })

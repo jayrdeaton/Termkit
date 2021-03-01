@@ -144,4 +144,17 @@ describe('complex', () => {
       // result.command.is('help')
     })
   })
+  describe('program.parse(-b req)', () => {
+    it('should run program', async () => {
+      let error, result
+      try {
+        result = await program.parse('_ _ -b req'.split(' '))
+      } catch(err) {
+        error = err
+      }
+      isnt(error)
+      is(result)
+      // result.command.is('help')
+    })
+  })
 })

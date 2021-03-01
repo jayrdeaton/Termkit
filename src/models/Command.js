@@ -123,11 +123,13 @@ module.exports = class Command {
     array.splice(0, 2)
     let command = this
     const options = { _source: Array.from(array) }
-    while (array.length > 0) {
-      if (!array.includes('help')) findCommandVariables(array, command)
-      if (array[0].startsWith('-')) {
+    while (array.length) {
+      if (!array.includes('help')) {
         Object.assign(options, findOptions(array, command))
-      } else {
+        Object.assign(options, findCommandVariables(array, command))
+        Object.assign(options, findOptions(array, command))
+      }
+      if (array.length) {
         if (!array.includes('help')) for (const middleware of command.middlewaresArray) await middleware(options)
         const newCommand = findCommand(array, command.commandsArray)
         if (!newCommand && array[0] === 'help') return command.help(options._source)

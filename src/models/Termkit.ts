@@ -1,6 +1,6 @@
-import type { MiddlewareFn } from '@/types'
 import { Command } from '@/models/Command'
 import { Option } from '@/models/Option'
+import type { MiddlewareFn } from '@/types'
 
 interface TermkitDefaults {
   middlewares?: MiddlewareFn[]

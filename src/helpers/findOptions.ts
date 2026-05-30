@@ -1,6 +1,6 @@
-import type { Command } from '@/models/Command'
 import { findOption } from '@/helpers/findOption'
 import { findVariables } from '@/helpers/findVariables'
+import type { Command } from '@/models/Command'
 
 export function findOptions(array: string[], command: Command): Record<string, unknown> {
   const result: Record<string, unknown> = {}

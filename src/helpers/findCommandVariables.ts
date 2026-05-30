@@ -1,5 +1,5 @@
-import type { Command } from '@/models/Command'
 import { findVariable } from '@/helpers/findVariable'
+import type { Command } from '@/models/Command'
 
 export function findCommandVariables(array: string[], command: Command): Record<string, unknown> | null {
   if (!command.variables) return null

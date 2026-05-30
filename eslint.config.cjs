@@ -38,7 +38,7 @@ module.exports = defineConfig([
       'simple-import-sort/imports': 'warn',
       'simple-import-sort/exports': 'warn',
       'no-console': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-require-imports': 'off'
     }
   }

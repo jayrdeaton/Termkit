@@ -5,9 +5,9 @@ import { findCommand } from '@/helpers/findCommand'
 import { findCommandVariables } from '@/helpers/findCommandVariables'
 import { findOptions } from '@/helpers/findOptions'
 import { getVariables } from '@/helpers/getVariables'
-import type { ActionFn, MiddlewareFn, ParsedOptions } from '@/types'
 import { Option } from '@/models/Option'
 import { Variable } from '@/models/Variable'
+import type { ActionFn, MiddlewareFn, ParsedOptions } from '@/types'
 
 interface CommandData {
   name?: string

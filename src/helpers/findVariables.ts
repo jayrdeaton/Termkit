@@ -1,5 +1,5 @@
-import type { Variable } from '@/models/Variable'
 import { findVariable } from '@/helpers/findVariable'
+import type { Variable } from '@/models/Variable'
 
 export function findVariables(base: string | null, array: string[], variables: Variable[] | null, commands: string[]): Record<string, unknown> {
   const result: Record<string, unknown> = {}

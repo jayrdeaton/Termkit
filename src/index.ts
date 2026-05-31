@@ -4,7 +4,7 @@ import type { MiddlewareFn } from '@/types'
 
 export { Command } from '@/models/Command'
 export { Option } from '@/models/Option'
-export { Termkit } from '@/models/Termkit'
+export { TermKit } from '@/models/TermKit'
 export { Variable } from '@/models/Variable'
 export type { ActionFn, MiddlewareFn, ParsedOptions, VariableType } from '@/types'
 

@@ -2,26 +2,26 @@ import { Command } from '@/models/Command'
 import { Option } from '@/models/Option'
 import type { MiddlewareFn } from '@/types'
 
-interface TermkitDefaults {
+interface TermKitDefaults {
   middlewares?: MiddlewareFn[]
   options?: Option[]
 }
 
-export class Termkit {
+export class TermKit {
   private static base: Command | null = null
-  private static commandDefaults: TermkitDefaults = {}
+  private static commandDefaults: TermKitDefaults = {}
 
-  static set defaults(obj: TermkitDefaults) {
-    Termkit.commandDefaults = obj
+  static set defaults(obj: TermKitDefaults) {
+    TermKit.commandDefaults = obj
   }
 
-  static setDefaults(obj: TermkitDefaults): void {
-    Termkit.commandDefaults = obj
+  static setDefaults(obj: TermKitDefaults): void {
+    TermKit.commandDefaults = obj
   }
 
   static command(name: string, variables?: string | null, info?: string): Command {
-    const cmd = new Command(Object.assign({ name, variables, info }, Termkit.commandDefaults))
-    if (!Termkit.base) Termkit.base = cmd
+    const cmd = new Command(Object.assign({ name, variables, info }, TermKit.commandDefaults))
+    if (!TermKit.base) TermKit.base = cmd
     return cmd
   }
 
@@ -34,7 +34,7 @@ export class Termkit {
   }
 
   static parse(arr: string[]): Promise<unknown> {
-    if (!Termkit.base) throw new Error('No command defined')
-    return Termkit.base.parse(arr)
+    if (!TermKit.base) throw new Error('No command defined')
+    return TermKit.base.parse(arr)
   }
 }

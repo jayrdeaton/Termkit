@@ -1,4 +1,4 @@
-# Termkit
+# TermKit
 
 A fluent CLI framework for Node.js with nested subcommands, middleware, and TypeScript support.
 
@@ -150,7 +150,7 @@ my-app serve help
 
 ### Classes
 
-`Command`, `Option`, `Variable`, `Termkit`
+`Command`, `Option`, `Variable`, `TermKit`
 
 ### Types
 

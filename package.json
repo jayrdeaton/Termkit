@@ -1,6 +1,6 @@
 {
   "name": "termkit",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Fluent CLI framework for Node.js with nested subcommands, middleware, and TypeScript support",
   "keywords": [
     "argv",

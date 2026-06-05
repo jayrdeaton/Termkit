@@ -1,16 +1,27 @@
 {
   "name": "termkit",
   "version": "2.0.2",
-  "description": "Fluent CLI framework for Node.js with nested subcommands, middleware, and TypeScript support",
+  "description": "Terminal toolkit for Node.js — CLI framework with nested subcommands, animated spinners, progress bars, prompts, and TypeScript support",
   "keywords": [
+    "animation",
     "argv",
+    "bar",
+    "braille",
     "builder",
     "cli",
     "command-line",
     "framework",
+    "gradient",
+    "input",
     "middleware",
     "parser",
+    "progress",
+    "progress-bar",
+    "prompt",
+    "select",
+    "spinner",
     "subcommands",
+    "terminal",
     "typescript"
   ],
   "homepage": "https://github.com/jayrdeaton/termkit#readme",
@@ -39,7 +50,13 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "build": "tsup && tsc --emitDeclarationOnly",
+    "demo:bar": "node demos/bar.js",
+    "demo:color": "node demos/color.js",
+    "demo:input": "node demos/input.js",
+    "demo:program": "node demos/program.js",
+    "demo:select": "node demos/select.js",
+    "demo:spinner": "node demos/spinner.js",
     "fix": "eslint --fix",
     "lint": "eslint",
     "prepublishOnly": "npm run build",
@@ -53,7 +70,7 @@
     "preversion": "npm run lint && npm test"
   },
   "dependencies": {
-    "cosmetic": "^1.4.0"
+    "cosmetic": "^1.4.1"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

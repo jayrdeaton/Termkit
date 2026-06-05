@@ -11,6 +11,7 @@ module.exports = {
           module: 'CommonJS',
           moduleResolution: 'node',
           ignoreDeprecations: '5.0',
+          lib: ['ES2022'],
           types: ['jest', 'node']
         }
       }

@@ -1,5 +1,5 @@
-import { getVariables } from '@/helpers/getVariables'
 import { Variable } from '@/models/Variable'
+import { getVariables } from '@/utils/getVariables'
 
 interface OptionData {
   short?: string | null

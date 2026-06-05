@@ -1,6 +1,7 @@
-export type VariableType = 'string' | 'number' | 'boolean'
+export type VariableType = 'string' | 'number' | 'integer' | 'boolean' | 'enum'
 
 export interface ParsedOptions {
+  _?: string[]
   _source: string[]
   _parents?: Record<string, Record<string, unknown>>
   [key: string]: unknown

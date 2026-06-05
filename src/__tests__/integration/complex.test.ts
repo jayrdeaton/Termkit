@@ -1,4 +1,4 @@
-import { command, option } from '..'
+import { command, option } from '../..'
 
 type ActionResult = { command: string; options: unknown }
 

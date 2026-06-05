@@ -1,13 +1,15 @@
 /* eslint-disable no-console */
 import cosmetic from 'cosmetic'
 
-import { findCommand } from '@/helpers/findCommand'
-import { findCommandVariables } from '@/helpers/findCommandVariables'
-import { findOptions } from '@/helpers/findOptions'
-import { getVariables } from '@/helpers/getVariables'
+import { config } from '@/config'
 import { Option } from '@/models/Option'
 import { Variable } from '@/models/Variable'
 import type { ActionFn, MiddlewareFn, ParsedOptions } from '@/types'
+import { findCommand } from '@/utils/findCommand'
+import { findCommandVariables } from '@/utils/findCommandVariables'
+import { findOptions } from '@/utils/findOptions'
+import { coerce } from '@/utils/findVariable'
+import { getVariables } from '@/utils/getVariables'
 
 interface CommandData {
   name?: string
@@ -101,10 +103,20 @@ export class Command {
     return this
   }
 
-  help(_source?: string[]): void {
+  private buildInfo(info: string | null | undefined, variables: Variable[] | null): string {
+    const hints = variables?.map((v) => v.hint).filter(Boolean) ?? []
+    return [info, ...hints].filter(Boolean).join(' ')
+  }
+
+  help(source?: string[]): void {
+    const recursive = source?.includes('-r') === true || source?.includes('--recursive') === true
+    this.printHelp(this.name ?? 'Program', recursive)
+  }
+
+  private printHelp(fullName: string, recursive: boolean): void {
     const table: HelpSection[] = []
 
-    let program = this.name ?? 'Program'
+    let program = fullName
     if (this.variables) for (const v of this.variables) program += ` ${v.raw}`
     if (this.optionsArray.length > 0) program += ' [...options]'
     table.push({ title: '\nCommand', info: program, data: [] })
@@ -120,7 +132,7 @@ export class Command {
         if (opt.short && opt.long) name += ', '
         if (opt.long) name += `--${opt.long}`
         if (opt.variables) for (const v of opt.variables) name += ` ${v.raw}`
-        section.data.push([name, opt.info ?? ''])
+        section.data.push([name, this.buildInfo(opt.info, opt.variables)])
       }
       table.push(section)
     }
@@ -130,7 +142,7 @@ export class Command {
       for (const cmd of this.commandsArray) {
         let name = cmd.name ?? ''
         if (cmd.variables) for (const v of cmd.variables) name += ` ${v.raw}`
-        section.data.push([name, cmd.info ?? ''])
+        section.data.push([name, this.buildInfo(cmd.info, cmd.variables)])
       }
       table.push(section)
     }
@@ -146,7 +158,8 @@ export class Command {
 
     const lines: string[] = []
     for (const section of table) {
-      lines.push(section.title ? cosmetic.cyan.underline.encoder(section.title) : '')
+      const styled = typeof config.color === 'number' ? cosmetic.xterm(config.color) : config.color.startsWith('#') ? cosmetic.hex(config.color) : (cosmetic[config.color as keyof typeof cosmetic] as typeof cosmetic)
+      lines.push(section.title ? styled.underline.encoder(section.title) : '')
       if (section.info) lines.push(section.info)
       for (const row of section.data) {
         let line = ''
@@ -160,6 +173,12 @@ export class Command {
     }
 
     for (const line of lines) console.log(line)
+
+    if (recursive) {
+      for (const cmd of this.commandsArray) {
+        cmd.printHelp(`${fullName} ${cmd.name ?? ''}`, true)
+      }
+    }
   }
 
   async parse(input: string[]): Promise<unknown> {
@@ -169,12 +188,18 @@ export class Command {
     let command: Command = this
     const options: ParsedOptions = { _source: Array.from(array) }
 
+    const ddIdx = array.indexOf('--')
+    if (ddIdx !== -1) {
+      options._ = array.splice(ddIdx + 1)
+      array.splice(ddIdx, 1)
+    }
+
     while (array.length) {
       if (!array.includes('help')) {
-        Object.assign(options, findOptions(array, command))
-        const cmdVars = findCommandVariables(array, command)
+        Object.assign(options, await findOptions(array, command))
+        const cmdVars = await findCommandVariables(array, command)
         if (cmdVars) Object.assign(options, cmdVars)
-        Object.assign(options, findOptions(array, command))
+        Object.assign(options, await findOptions(array, command))
       }
       if (array.length) {
         if (!array.includes('help')) {
@@ -194,6 +219,15 @@ export class Command {
           }
         }
         command = next
+      }
+    }
+
+    for (const opt of command.optionsArray) {
+      if (!opt.long || !opt.variables) continue
+      for (const v of opt.variables) {
+        if (v.default !== null && !(opt.long in options)) {
+          options[opt.long] = coerce(v.default, v.type, v.enum, v.min, v.max)
+        }
       }
     }
 

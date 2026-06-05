@@ -1,4 +1,4 @@
-import { command, option, setDefaults } from '..'
+import { command, option, setDefaults } from '../..'
 
 type OutputEntry = { name: string; options: unknown }
 

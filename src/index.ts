@@ -1,6 +1,6 @@
+import { config } from '@/config'
 import { Command } from '@/models/Command'
 import { Option } from '@/models/Option'
-import { config } from '@/config'
 import type { MiddlewareFn } from '@/types'
 
 export type { HelpColor } from '@/config'
@@ -56,8 +56,7 @@ export const Program = {
     return cmd
   },
 
-  option: (short: string | null, long: string | null, variables: string | null, info: string): Option =>
-    new Option({ short, long, variables, info }),
+  option: (short: string | null, long: string | null, variables: string | null, info: string): Option => new Option({ short, long, variables, info }),
 
   middleware: (fn: MiddlewareFn): MiddlewareFn => fn,
 
@@ -78,5 +77,5 @@ export const Program = {
 
   setDefaults: (data: CommandDefaults): void => {
     commandDefaults = data
-  },
+  }
 }

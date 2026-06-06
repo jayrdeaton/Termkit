@@ -1,6 +1,6 @@
 # TermKit
 
-A fluent CLI framework for Node.js with nested subcommands, middleware, and TypeScript support.
+TermKit is a complete terminal toolkit for Node.js. Build CLI programs with a fluent command API — nested subcommands, middleware, typed options — then prompt users interactively, render progress bars, tables, and charts, all from a single package with full TypeScript support.
 
 ## Installation
 
@@ -10,12 +10,14 @@ npm install termkit
 
 ## Usage
 
-### Basic program
+### Program
+
+`Program` is the entry point for CLI argument parsing. Define commands with `Program.command`, declare options, attach middleware and actions, then call `Program.parse` to run.
 
 ```ts
-import { command, option, parse } from 'termkit'
+import { Program } from 'termkit'
 
-const program = command('my-app')
+Program.command('my-app')
   .version('1.0.0')
   .description('My CLI application')
   .option('v', 'verbose', null, 'Enable verbose output')
@@ -24,11 +26,7 @@ const program = command('my-app')
     console.log(options.output)
   })
 
-try {
-  program.parse(process.argv)
-} catch (err) {
-  console.error(err)
-}
+Program.parse(process.argv)
 ```
 
 ### Options
@@ -36,7 +34,7 @@ try {
 Options support four variable shapes:
 
 ```ts
-command('app')
+Program.command('app')
   .option('b', 'boolean', null,        'Flag with no value')
   .option('o', 'optional', '[val]',    'Optional value')
   .option('r', 'required', '<val>',    'Required value')
@@ -56,18 +54,26 @@ Accessible in actions and middleware via the long name:
 
 ### Value coercion
 
-Append `:number` or `:boolean` to a variable to coerce the parsed string:
+Append `:number`, `:integer`, or `:boolean` to a variable to coerce the parsed string. Append `(min,max)` to enforce a numeric or length range. Use `|`-separated values for an enum:
 
 ```ts
-command('app')
-  .option('p', 'port',    '<port:number>',     'Port number')
-  .option('v', 'verbose', '[verbose:boolean]', 'Verbose mode')
-  .option('n', 'nums',    '[nums:number...]',  'List of numbers')
+Program.command('app')
+  .option('p', 'port',  '<port:integer(1,65535)>', 'Port number')
+  .option('e', 'env',   '<env:dev|staging|prod>',  'Environment')
+  .option('n', 'nums',  '[nums:number...]',          'List of numbers')
+  .option('t', 'token', '<token:string(32,64)>',    'API token')
   .action((options) => {
-    options.port    // number
-    options.verbose // boolean
-    options.nums    // number[]
+    options.port  // number
+    options.env   // 'dev' | 'staging' | 'prod'
+    options.nums  // number[]
+    options.token // string
   })
+```
+
+Append `=default` inside the brackets to set a default value:
+
+```ts
+.option('p', 'port', '[port:integer=3000]', 'Port number')
 ```
 
 ### Subcommands
@@ -75,15 +81,13 @@ command('app')
 Commands nest to any depth. Each level can have its own options and middleware.
 
 ```ts
-import { command, option } from 'termkit'
-
-command('app')
+Program.command('app')
   .commands([
-    command('serve')
+    Program.command('serve')
       .option('p', 'port', '<port:number>', 'Port to listen on')
       .action((options) => startServer(options.port)),
 
-    command('build')
+    Program.command('build')
       .option('w', 'watch', null, 'Watch for changes')
       .action((options) => runBuild(options)),
   ])
@@ -92,9 +96,9 @@ command('app')
 Commands can also carry their own positional variables:
 
 ```ts
-command('get', '<id>')        // required
-command('list', '[filter]')   // optional
-command('tag', '[tags...]')   // array
+Program.command('get', '<id>')        // required
+Program.command('list', '[filter]')   // optional
+Program.command('tag', '[tags...]')   // array
 ```
 
 ### Middleware
@@ -102,7 +106,7 @@ command('tag', '[tags...]')   // array
 Middleware runs before the action. It can mutate the options object and supports async.
 
 ```ts
-command('app')
+Program.command('app')
   .middleware(async (options) => {
     options.user = await getUser(options.token)
   })
@@ -118,9 +122,7 @@ Use `.middlewares([...])` to register several at once. When navigating into a su
 Apply middleware or options to every command created after the call:
 
 ```ts
-import { setDefaults } from 'termkit'
-
-setDefaults({
+Program.setDefaults({
   middlewares: [
     async (options) => { options.timestamp = Date.now() }
   ]
@@ -134,6 +136,19 @@ Passing `help` anywhere in argv prints a formatted usage table and stops executi
 ```bash
 my-app help
 my-app serve help
+```
+
+### configure
+
+Sets global display options for the entire toolkit — accent color used in help output, tables, charts, and prompts; plus Unicode glyph support.
+
+```ts
+import { configure } from 'termkit'
+
+configure({
+  color: '#a855f7', // any named color, hex string, or xterm number
+  glyphs: true,
+})
 ```
 
 ### Input
@@ -326,7 +341,7 @@ new Table(rows, { columns: ['name', 'role'] }).print()
 
 ### Chart
 
-The `Chart` namespace provides horizontal bar, vertical column, heatmap, and scatter visualizations. Every chart class has a `.print()` method that writes to stdout and a `.toString()` method that returns the rendered string.
+The `Chart` namespace provides horizontal bar, vertical column, heatmap, scatter, line, and sparkline visualizations. Every chart class has a `.print()` method that writes to stdout and a `.toString()` method that returns the rendered string.
 
 All chart constructors accept optional `paddingX` and `paddingY` options to add whitespace around the output.
 
@@ -570,6 +585,60 @@ Each `add()` call accepts the same options as `Bar` and returns a `Bar` instance
 
 Options: `interval`.
 
+### Spinner
+
+Animated spinner for indeterminate work. Shares the same completion API as `Bar` — `.succeed()`, `.fail()`, `.warn()`, `.info()`.
+
+```ts
+import { Spinner } from 'termkit'
+
+const spinner = new Spinner({ text: 'Loading…' })
+spinner.start()
+
+await doWork()
+
+spinner.succeed('Done')
+```
+
+Update the label while running:
+
+```ts
+spinner.message('Still working…')
+```
+
+Built-in frame sets are available on `Spinner.FRAMES`:
+
+```ts
+new Spinner({ frames: Spinner.FRAMES.dots, text: 'Thinking…' }).start()
+```
+
+Frame sets: `braille`, `dots`, `line`, `arrow`, `bounce`.
+
+Options: `frames`, `text`, `prefix`, `suffix`, `reverse`, `interval`, `colors`, `bgColors`, `colorCycle`, `shimmer`, `successColor`, `failColor`, `warnColor`, `infoColor`, `glyphs`.
+
+### Scrollbox
+
+Interactive terminal pager. Renders a fixed-height viewport over an array of strings with keyboard navigation. Requires an interactive TTY.
+
+```ts
+import { scrollbox } from 'termkit'
+
+await scrollbox(lines, { height: 20, title: 'Output', lineNumbers: true })
+```
+
+Or use the class directly for more control:
+
+```ts
+import { Scrollbox } from 'termkit'
+
+const box = new Scrollbox({ height: 15, scrollbar: true, wrapLines: true })
+await box.show(lines)
+```
+
+Keyboard controls: ↑↓ / `j` `k` scroll one line · `d` / `u` half-page · `f` / `b` full page · `g` top · `G` bottom · Enter / Escape / `q` close.
+
+Options: `height`, `title`, `lineNumbers`, `scrollbar`, `borderColor`, `wrapLines`.
+
 ### truncate
 
 ANSI-aware string truncation. Measures visible length ignoring escape codes, and appends a configurable suffix.
@@ -595,16 +664,22 @@ console.log(wrap(longParagraph, 60))
 
 ## API
 
+### Program
+
+| Method | Signature | Description |
+|---|---|---|
+| `Program.command` | `(name, variables?, info?) => Command` | Create a command |
+| `Program.option` | `(short, long, variables, info) => Option` | Create a standalone option |
+| `Program.middleware` | `(fn) => fn` | Identity helper for typing middleware inline |
+| `Program.parse` | `(argv) => Promise<void>` | Parse argv using the root command |
+| `Program.setDefaults` | `(defaults) => void` | Apply middleware/options to all new commands |
+
 ### Functions
 
 | Function | Signature | Description |
 |---|---|---|
-| `command` | `(name, variables?, info?) => Command` | Create a command |
-| `option` | `(short, long, variables, info) => Option` | Create an option |
-| `middleware` | `(fn) => fn` | Identity helper for typing middleware inline |
-| `parse` | `(argv) => Promise<unknown>` | Parse using the root command |
-| `setDefaults` | `(defaults) => void` | Set defaults applied to all new commands |
-| `configure` | `(opts) => void` | Set global display options (color, glyphs) |
+| `configure` | `(opts) => void` | Set global accent color and display options |
+| `scrollbox` | `(lines, options?) => Promise<void>` | Interactive terminal pager |
 | `markup` | `(data, options?) => string` | Pretty-print a value with syntax coloring |
 | `input` | `(prompt, options?) => Promise<string \| number \| boolean \| null>` | Interactive text prompt |
 | `confirm` | `(prompt, options?) => Promise<boolean \| null>` | Boolean yes/no prompt |
@@ -620,7 +695,7 @@ console.log(wrap(longParagraph, 60))
 
 ### Classes
 
-`Command`, `Option`, `Variable`, `TermKit`, `Bar`, `MultiBar`, `Spinner`, `Input`, `Select`, `MultiSelect`, `Log`, `Table`, `Column`, `Chart.Bar`, `Chart.VerticalBar`, `Chart.Heatmap`, `Chart.Scatter`, `Chart.Line`
+`Command`, `Option`, `Variable`, `TermKit`, `Bar`, `MultiBar`, `Spinner`, `Scrollbox`, `Input`, `Select`, `MultiSelect`, `Log`, `Table`, `Column`, `Chart.Bar`, `Chart.VerticalBar`, `Chart.Heatmap`, `Chart.Scatter`, `Chart.Line`
 
 ### Types
 

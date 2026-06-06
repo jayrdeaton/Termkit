@@ -1,4 +1,6 @@
-import { command, option } from '../..'
+import { Program } from '../..'
+
+const { command, option } = Program
 
 type ActionResult = { command: string; options: unknown }
 

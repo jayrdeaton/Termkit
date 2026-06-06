@@ -1,4 +1,6 @@
-import { command, option, setDefaults } from '../..'
+import { Program } from '../..'
+
+const { command, option, setDefaults } = Program
 
 type OutputEntry = { name: string; options: unknown }
 

@@ -1,5 +1,5 @@
-import { ansiColor, applyShimmer, BLUE, colorText, dimColor, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
 import { registerCleanup } from '@/utils/cleanup'
+import { ansiColor, applyShimmer, BLUE, colorText, dimColor, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
 import { stringLength } from '@/utils/stringLength'
 
 export type BarMode = 'bounce' | 'loop' | 'loop-reverse'
@@ -236,7 +236,10 @@ export class Bar {
     if (options?.unit !== undefined) this._rateUnit = options.unit
     if (options?.showRate !== undefined) this._showRate = options.showRate
     if (options?.showEta !== undefined) this._showEta = options.showEta
-    if (!this._showRate && !this._showEta) { this._showRate = true; this._showEta = true }
+    if (!this._showRate && !this._showEta) {
+      this._showRate = true
+      this._showEta = true
+    }
     return this
   }
 
@@ -284,7 +287,10 @@ export class Bar {
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
-      if (this._resizeListener) { process.stdout.off('resize', this._resizeListener); this._resizeListener = null }
+      if (this._resizeListener) {
+        process.stdout.off('resize', this._resizeListener)
+        this._resizeListener = null
+      }
       this.clear()
       process.stdout.write(`${SHOW_CURSOR}${colorText(this._successColor, '✔')}${string ? ` ${string}` : ''}\n`)
     } else {
@@ -303,7 +309,10 @@ export class Bar {
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
-      if (this._resizeListener) { process.stdout.off('resize', this._resizeListener); this._resizeListener = null }
+      if (this._resizeListener) {
+        process.stdout.off('resize', this._resizeListener)
+        this._resizeListener = null
+      }
       this.clear()
       process.stdout.write(`${SHOW_CURSOR}${colorText(this._failColor, '✖')}${string ? ` ${string}` : ''}\n`)
     } else {
@@ -322,7 +331,10 @@ export class Bar {
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
-      if (this._resizeListener) { process.stdout.off('resize', this._resizeListener); this._resizeListener = null }
+      if (this._resizeListener) {
+        process.stdout.off('resize', this._resizeListener)
+        this._resizeListener = null
+      }
       this.clear()
       process.stdout.write(`${SHOW_CURSOR}${colorText(this._warnColor, '⚠')}${string ? ` ${string}` : ''}\n`)
     } else {
@@ -341,7 +353,10 @@ export class Bar {
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
-      if (this._resizeListener) { process.stdout.off('resize', this._resizeListener); this._resizeListener = null }
+      if (this._resizeListener) {
+        process.stdout.off('resize', this._resizeListener)
+        this._resizeListener = null
+      }
       this.clear()
       process.stdout.write(`${SHOW_CURSOR}${colorText(this._infoColor, 'ℹ')}${string ? ` ${string}` : ''}\n`)
     } else {
@@ -444,21 +459,39 @@ export class Bar {
   }
 
   private advanceIndeterminate(length: number): void {
-    if (this.position > length) { this.position = length; this.forwardMotion = false }
-    if (this.position < 1) { this.position = 1; this.forwardMotion = true }
+    if (this.position > length) {
+      this.position = length
+      this.forwardMotion = false
+    }
+    if (this.position < 1) {
+      this.position = 1
+      this.forwardMotion = true
+    }
     if (this.mode === 'loop') {
       this.position++
-      if (this.position > length) { this.position = 1; this.onLoop?.() }
+      if (this.position > length) {
+        this.position = 1
+        this.onLoop?.()
+      }
     } else if (this.mode === 'loop-reverse') {
       this.position--
-      if (this.position < 1) { this.position = length; this.onLoop?.() }
+      if (this.position < 1) {
+        this.position = length
+        this.onLoop?.()
+      }
     } else {
       if (this.forwardMotion) {
         this.position++
-        if (this.position >= length) { this.forwardMotion = false; this.onBounce?.() }
+        if (this.position >= length) {
+          this.forwardMotion = false
+          this.onBounce?.()
+        }
       } else {
         this.position--
-        if (this.position <= 1) { this.forwardMotion = true; this.onBounce?.() }
+        if (this.position <= 1) {
+          this.forwardMotion = true
+          this.onBounce?.()
+        }
       }
     }
   }
@@ -469,11 +502,12 @@ export class Bar {
     const textReserved = this.text ? stringLength(this.text) + 1 : 0
     const suffixReserved = this._etaSuffix ? stringLength(this._etaSuffix) + 1 : 0
     const available = totalLength - textReserved - suffixReserved - stringLength(this.prefixString) - stringLength(this.suffixString)
-    const length = this.progress !== undefined
-      // Determinate: every position (filled or empty) is charWidth wide → constant bar width
-      ? Math.max(1, Math.floor((available - 1) / charWidth))
-      // Indeterminate: one position uses character, rest use 1-char fill (unchanged formula)
-      : Math.max(1, available - charWidth)
+    const length =
+      this.progress !== undefined
+        ? // Determinate: every position (filled or empty) is charWidth wide → constant bar width
+          Math.max(1, Math.floor((available - 1) / charWidth))
+        : // Indeterminate: one position uses character, rest use 1-char fill (unchanged formula)
+          Math.max(1, available - charWidth)
     const working = this.progress !== undefined ? this.buildDeterminate(length) : this.buildIndeterminate(length)
     const t = this.text
     const suffix = this._etaSuffix ? ` ${this._etaSuffix}` : ''
@@ -483,7 +517,9 @@ export class Bar {
   private run(): void {
     process.stdout.write(`${this.buildLine()}\x1b[K\r`)
     this.advanceFrame()
-    setTimeout(() => { if (this.running) this.run() }, this.interval)
+    setTimeout(() => {
+      if (this.running) this.run()
+    }, this.interval)
   }
 }
 

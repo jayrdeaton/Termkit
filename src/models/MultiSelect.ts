@@ -1,6 +1,6 @@
 import { config } from '@/config'
-import { applyShimmer, BLUE, colorText, formatColor, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, resolveColor, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR } from '@/utils/color'
 import { registerCleanup } from '@/utils/cleanup'
+import { applyShimmer, BLUE, colorText, formatColor, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, resolveColor, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR } from '@/utils/color'
 import { stringLength } from '@/utils/stringLength'
 
 export interface MultiSelectItem {
@@ -82,7 +82,7 @@ export class MultiSelect {
     let cursor = 0
     let viewportOffset = 0
     let searchQuery = ''
-    const checked = new Set<number>()  // original indexes into items[]
+    const checked = new Set<number>() // original indexes into items[]
     let error: string | null = null
     let lastDrawnLines = 0
 
@@ -95,12 +95,7 @@ export class MultiSelect {
     const getFiltered = (): Array<{ item: T; originalIndex: number }> => {
       if (!this.searchEnabled || searchQuery === '') return items.map((item, i) => ({ item, originalIndex: i }))
       const q = searchQuery.toLowerCase()
-      return items
-        .map((item, i) => ({ item, originalIndex: i }))
-        .filter(({ item }) =>
-          item.label.toLowerCase().includes(q) ||
-          (item.description?.toLowerCase().includes(q) ?? false)
-        )
+      return items.map((item, i) => ({ item, originalIndex: i })).filter(({ item }) => item.label.toLowerCase().includes(q) || (item.description?.toLowerCase().includes(q) ?? false))
     }
 
     const renderList = (redraw: boolean) => {
@@ -135,12 +130,8 @@ export class MultiSelect {
         const isCursor = vi === cursor
         const isChecked = checked.has(originalIndex)
         const desc = item.description ? ` ${colorText(this.descriptionColor, `— ${item.description}`)}` : ''
-        const checkMark = isChecked
-          ? (pulse ? `${pulse}${this.checkedPrefix}${RESET}` : colorText(this.promptColor, this.checkedPrefix))
-          : this.uncheckedPrefix
-        const label = isCursor
-          ? (pulse ? `${pulse}${item.label}${RESET}` : colorText(this.promptColor, item.label))
-          : item.label
+        const checkMark = isChecked ? (pulse ? `${pulse}${this.checkedPrefix}${RESET}` : colorText(this.promptColor, this.checkedPrefix)) : this.uncheckedPrefix
+        const label = isCursor ? (pulse ? `${pulse}${item.label}${RESET}` : colorText(this.promptColor, item.label)) : item.label
         process.stdout.write(`\r${indent}${checkMark} ${label}${desc}\n`)
         lastDrawnLines++
       }
@@ -165,7 +156,10 @@ export class MultiSelect {
       let timer: ReturnType<typeof setInterval> | null = null
 
       const deregisterCleanup = registerCleanup(() => {
-        if (timer) { clearInterval(timer); timer = null }
+        if (timer) {
+          clearInterval(timer)
+          timer = null
+        }
         process.stdin.setRawMode(false)
         process.stdin.pause()
         process.stdin.removeListener('data', onKey)
@@ -174,7 +168,10 @@ export class MultiSelect {
 
       const cleanup = (result: T[] | null) => {
         deregisterCleanup()
-        if (timer) { clearInterval(timer); timer = null }
+        if (timer) {
+          clearInterval(timer)
+          timer = null
+        }
 
         if (lastDrawnLines > 0) process.stdout.write(CURSOR_UP(lastDrawnLines))
         process.stdout.write('\x1b[0J')
@@ -182,9 +179,7 @@ export class MultiSelect {
         const bulletWidth = stringLength(this.checkedPrefix) + 1
         for (let i = 0; i < items.length; i++) {
           const item = items[i]
-          const bullet = checked.has(i)
-            ? `${colorText(this.promptColor, this.checkedPrefix)} `
-            : ' '.repeat(bulletWidth)
+          const bullet = checked.has(i) ? `${colorText(this.promptColor, this.checkedPrefix)} ` : ' '.repeat(bulletWidth)
           process.stdout.write(`\r${indent}${bullet}${item.label}\n`)
         }
         process.stdout.write(`\r${CLEAR_LINE}`)
@@ -277,7 +272,10 @@ export class MultiSelect {
           if (this.allowSkip) cleanup(null)
         } else if (str === '\x03') {
           deregisterCleanup()
-          if (timer) { clearInterval(timer); timer = null }
+          if (timer) {
+            clearInterval(timer)
+            timer = null
+          }
           process.stdin.setRawMode(false)
           process.stdin.pause()
           process.stdin.removeListener('data', onKey)

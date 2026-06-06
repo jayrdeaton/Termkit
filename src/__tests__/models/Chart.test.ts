@@ -1,4 +1,4 @@
-import { Chart } from '../../models/Chart'
+import * as Chart from '../../models/Chart'
 
 const strip = (s: string) => s.replace(/\x1b\[[^a-zA-Z]*[a-zA-Z]/g, '')
 

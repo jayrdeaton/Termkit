@@ -15,7 +15,10 @@ export function truncate(str: string, maxLength: number, suffix = '…'): string
   while (i < str.length && visible < target) {
     if (str[i] === '\x1b') {
       const m = str.slice(i).match(ANSI_RE)
-      if (m) { i += m[0].length; continue }
+      if (m) {
+        i += m[0].length
+        continue
+      }
     }
     visible++
     i++

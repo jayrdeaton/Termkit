@@ -1,6 +1,6 @@
 import { Bar, type BarOptions } from '@/models/Bar'
-import { HIDE_CURSOR, SHOW_CURSOR } from '@/utils/color'
 import { registerCleanup } from '@/utils/cleanup'
+import { HIDE_CURSOR, SHOW_CURSOR } from '@/utils/color'
 
 const CURSOR_UP = (n: number) => `\x1b[${n}A`
 
@@ -71,7 +71,7 @@ export class MultiBar {
 
     if (!this._running) return
 
-    if (this._bars.every(b => b._managedFinalLine !== null)) {
+    if (this._bars.every((b) => b._managedFinalLine !== null)) {
       this._running = false
       this._cleanupDeregister?.()
       this._cleanupDeregister = null
@@ -79,6 +79,8 @@ export class MultiBar {
       return
     }
 
-    setTimeout(() => { if (this._running) this.render() }, this._interval)
+    setTimeout(() => {
+      if (this._running) this.render()
+    }, this._interval)
   }
 }

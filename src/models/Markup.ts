@@ -30,7 +30,7 @@ export function markup(data?: unknown, options: MarkupOptions = {}): string {
     bigint: options.styles?.bigint ?? ((v) => colorText(YELLOW, v)),
     boolean: options.styles?.boolean ?? ((v) => colorText(CYAN, v)),
     string: options.styles?.string ?? ((v) => colorText(GREEN, v)),
-    symbol: options.styles?.symbol ?? ((v) => colorText(BLUE, v)),
+    symbol: options.styles?.symbol ?? ((v) => colorText(BLUE, v))
   }
 
   let result = ''

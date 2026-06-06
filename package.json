@@ -71,14 +71,14 @@
     "fix": "eslint --fix",
     "lint": "eslint",
     "prepublishOnly": "npm run build",
-    "release": "git push --follow-tags",
     "release:major": "npm version major && git push --follow-tags",
     "release:minor": "npm version minor && git push --follow-tags",
     "release:patch": "npm version patch && git push --follow-tags",
     "test": "jest",
     "test:watch": "jest --watchAll",
     "typecheck": "tsc --noEmit",
-    "preversion": "npm run lint && npm test"
+    "validate": "npm run lint && npm run typecheck && npm test",
+    "preversion": "npm run validate"
   },
   "dependencies": {
     "cosmetic": "^1.4.1"

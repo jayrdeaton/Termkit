@@ -1,4 +1,5 @@
 import cosmetic from 'cosmetic'
+
 import { config } from '@/config'
 import { Column, type ColumnAlign, type ColumnOptions } from '@/models/Column'
 import { padLeft } from '@/utils/padLeft'
@@ -17,9 +18,12 @@ export interface TableOptions {
 
 const alignPad = (align: ColumnAlign) => {
   switch (align) {
-    case 'center': return padSides
-    case 'right': return padLeft
-    default: return padRight
+    case 'center':
+      return padSides
+    case 'right':
+      return padLeft
+    default:
+      return padRight
   }
 }
 

@@ -1,5 +1,5 @@
-import { colorText, HIDE_CURSOR, RESET, SHOW_CURSOR } from '@/utils/color'
 import { registerCleanup } from '@/utils/cleanup'
+import { colorText, HIDE_CURSOR, RESET, SHOW_CURSOR } from '@/utils/color'
 import { padRight } from '@/utils/padRight'
 import { truncate } from '@/utils/truncate'
 import { wrap } from '@/utils/wrap'
@@ -41,9 +41,7 @@ export class Scrollbox {
     const gutterWidth = this.showScrollbar ? 1 : 0
     const contentWidth = Math.max(10, termWidth - lineNumWidth - gutterWidth)
 
-    const displayLines = this.wrapLines
-      ? lines.flatMap(line => wrap(line, contentWidth).split('\n'))
-      : lines
+    const displayLines = this.wrapLines ? lines.flatMap((line) => wrap(line, contentWidth).split('\n')) : lines
 
     const total = displayLines.length
     let offset = 0
@@ -76,21 +74,15 @@ export class Scrollbox {
       const visibleEnd = Math.min(total, offset + this.height)
       for (let i = offset; i < visibleEnd; i++) {
         const relIdx = i - offset
-        const numStr = this.lineNumbers
-          ? `${colorText(this.borderColor, String(i + 1).padStart(lineNumWidth - 1))} `
-          : ''
+        const numStr = this.lineNumbers ? `${colorText(this.borderColor, String(i + 1).padStart(lineNumWidth - 1))} ` : ''
         const content = this.wrapLines ? displayLines[i] : truncate(displayLines[i], contentWidth)
         const paddedContent = padRight(content, contentWidth)
-        const gutter = this.showScrollbar
-          ? (total > this.height && relIdx >= thumbStart && relIdx < thumbEnd ? '█' : colorText(this.borderColor, '▕'))
-          : ''
+        const gutter = this.showScrollbar ? (total > this.height && relIdx >= thumbStart && relIdx < thumbEnd ? '█' : colorText(this.borderColor, '▕')) : ''
         process.stdout.write(`\r${numStr}${paddedContent}${gutter}\n`)
         lastDrawnLines++
       }
 
-      const pct = total <= this.height
-        ? '100%'
-        : `${Math.round((offset / (total - this.height)) * 100)}%`
+      const pct = total <= this.height ? '100%' : `${Math.round((offset / (total - this.height)) * 100)}%`
       process.stdout.write(`\r${DIM}↑↓/jk line  space/b page  g/G top/end  q close  ${pct}${RESET}\n`)
       lastDrawnLines++
     }

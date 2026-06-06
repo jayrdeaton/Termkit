@@ -372,12 +372,12 @@ Pass `width` to override the terminal column width used for scaling:
 new Chart.Bar(data, { width: 60, paddingX: 2, paddingY: 1 }).print()
 ```
 
-#### Chart.Column
+#### Chart.VerticalBar
 
 Vertical column chart using Unicode block characters with fractional height resolution.
 
 ```ts
-new Chart.Column([
+new Chart.VerticalBar([
   { key: 'M', value: 10 },
   { key: 'T', value: 25 },
   { key: 'W', value: 18 },
@@ -389,7 +389,7 @@ new Chart.Column([
 Pass `null` items to insert gaps between column groups:
 
 ```ts
-new Chart.Column([
+new Chart.VerticalBar([
   { key: 'A', value: 15, style: Color.blue },
   { key: 'B', value: 28, style: Color.blue },
   null,
@@ -400,7 +400,7 @@ new Chart.Column([
 Pass `width` to have `colWidth` auto-calculated to fill a fixed total width:
 
 ```ts
-new Chart.Column(data, { width: 40, height: 12 }).print()
+new Chart.VerticalBar(data, { width: 40, height: 12 }).print()
 ```
 
 #### Chart.Heatmap

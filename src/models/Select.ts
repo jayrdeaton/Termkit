@@ -1,6 +1,6 @@
 import { config } from '@/config'
-import { applyShimmer, BLUE, colorText, formatColor, HIDE_CURSOR, interpolateColor, parseHex, RESET, resolveColor, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR } from '@/utils/color'
 import { registerCleanup } from '@/utils/cleanup'
+import { applyShimmer, BLUE, colorText, formatColor, HIDE_CURSOR, interpolateColor, parseHex, RESET, resolveColor, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR } from '@/utils/color'
 import { stringLength } from '@/utils/stringLength'
 
 export interface SelectItem {
@@ -23,7 +23,6 @@ export interface SelectOptions {
   maxHeight?: number
 }
 
-const CLEAR_LINE = '\x1b[2K'
 const CURSOR_UP = (n: number) => `\x1b[${n}A`
 
 export class Select {
@@ -79,10 +78,7 @@ export class Select {
     const getFiltered = (): T[] => {
       if (!this.searchEnabled || searchQuery === '') return items
       const q = searchQuery.toLowerCase()
-      return items.filter(item =>
-        item.label.toLowerCase().includes(q) ||
-        (item.description?.toLowerCase().includes(q) ?? false)
-      )
+      return items.filter((item) => item.label.toLowerCase().includes(q) || (item.description?.toLowerCase().includes(q) ?? false))
     }
 
     process.stdout.write(HIDE_CURSOR)
@@ -146,7 +142,10 @@ export class Select {
       let timer: ReturnType<typeof setInterval> | null = null
 
       const deregisterCleanup = registerCleanup(() => {
-        if (timer) { clearInterval(timer); timer = null }
+        if (timer) {
+          clearInterval(timer)
+          timer = null
+        }
         process.stdin.setRawMode(false)
         process.stdin.pause()
         process.stdin.removeListener('data', onKey)
@@ -155,7 +154,10 @@ export class Select {
 
       const cleanup = () => {
         deregisterCleanup()
-        if (timer) { clearInterval(timer); timer = null }
+        if (timer) {
+          clearInterval(timer)
+          timer = null
+        }
         process.stdin.setRawMode(false)
         process.stdin.pause()
         process.stdin.removeListener('data', onKey)

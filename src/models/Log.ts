@@ -1,5 +1,5 @@
-import { BLUE, colorText, GREEN, RED, YELLOW } from '@/utils/color'
 import { markup, type MarkupOptions } from '@/models/Markup'
+import { BLUE, colorText, GREEN, RED, YELLOW } from '@/utils/color'
 
 export interface LogOptions {
   successColor?: string

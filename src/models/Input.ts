@@ -288,9 +288,6 @@ export async function input(prompt: string, options: InputOptions = {}): Promise
   return new Input(options).ask(prompt)
 }
 
-export async function confirm(
-  prompt: string,
-  options?: Pick<InputOptions, 'default' | 'required' | 'promptColor' | 'promptGlyph' | 'inline'>
-): Promise<boolean | null> {
+export async function confirm(prompt: string, options?: Pick<InputOptions, 'default' | 'required' | 'promptColor' | 'promptGlyph' | 'inline'>): Promise<boolean | null> {
   return new Input({ ...options, type: 'boolean' }).ask(prompt) as Promise<boolean | null>
 }

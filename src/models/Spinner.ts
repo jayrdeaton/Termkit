@@ -1,6 +1,6 @@
 import { config } from '@/config'
-import { applyShimmer, BLUE, colorText, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
 import { registerCleanup } from '@/utils/cleanup'
+import { applyShimmer, BLUE, colorText, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
 import { stringLength } from '@/utils/stringLength'
 
 export interface SpinnerOptions {

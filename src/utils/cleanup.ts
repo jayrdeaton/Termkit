@@ -13,7 +13,9 @@ function install() {
 
 function flush() {
   for (const fn of fns) {
-    try { fn() } catch {}
+    try {
+      fn()
+    } catch {}
   }
   fns.clear()
 }
@@ -21,5 +23,7 @@ function flush() {
 export function registerCleanup(fn: () => void): () => void {
   install()
   fns.add(fn)
-  return () => { fns.delete(fn) }
+  return () => {
+    fns.delete(fn)
+  }
 }

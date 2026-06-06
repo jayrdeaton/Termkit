@@ -1,9 +1,9 @@
 import { config } from '@/config'
 import { Input, type InputType } from '@/models/Input'
 import { Select } from '@/models/Select'
-import { resolveColor } from '@/utils/color'
 import type { Variable } from '@/models/Variable'
 import type { VariableType } from '@/types'
+import { resolveColor } from '@/utils/color'
 
 export function coerce(value: string, type: VariableType, enumValues: string[] | null, min: number | null = null, max: number | null = null): unknown {
   if (type === 'number' || type === 'integer') {
@@ -31,7 +31,7 @@ async function promptForVariable(variable: Variable): Promise<unknown | null> {
   const promptColor = resolveColor(config.color)
 
   if (variable.type === 'enum' && variable.enum) {
-    const items = variable.enum.map(label => ({ label }))
+    const items = variable.enum.map((label) => ({ label }))
     const result = await new Select({ promptColor }).ask(`<${variable.name}>`, items)
     return result !== null ? result.label : null
   }
@@ -40,11 +40,11 @@ async function promptForVariable(variable: Variable): Promise<unknown | null> {
   return new Input({
     type: variable.type as InputType,
     promptColor,
-    min: isNumeric ? variable.min ?? undefined : undefined,
-    max: isNumeric ? variable.max ?? undefined : undefined,
-    minLength: !isNumeric ? variable.min ?? undefined : undefined,
-    maxLength: !isNumeric ? variable.max ?? undefined : undefined,
-    required: true,
+    min: isNumeric ? (variable.min ?? undefined) : undefined,
+    max: isNumeric ? (variable.max ?? undefined) : undefined,
+    minLength: !isNumeric ? (variable.min ?? undefined) : undefined,
+    maxLength: !isNumeric ? (variable.max ?? undefined) : undefined,
+    required: true
   }).ask(`<${variable.name}>`)
 }
 

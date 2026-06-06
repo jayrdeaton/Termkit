@@ -38,6 +38,59 @@ const F = Spinner.FRAMES
   console.log(lang ? `  Picked: ${lang.label}` : '  None chosen')
   console.log()
 
+  // ─── search / filter ─────────────────────────────────────────────────────
+  console.log('— Search (type to filter) —')
+  const searchSelect = new Select({ search: true, skipLabel: 'Cancel' })
+  const pkg = await searchSelect.ask('Pick a package:', [
+    { label: 'express',    description: 'HTTP framework' },
+    { label: 'fastify',    description: 'fast HTTP framework' },
+    { label: 'koa',        description: 'minimalist web framework' },
+    { label: 'hono',       description: 'edge-native HTTP framework' },
+    { label: 'nest',       description: 'opinionated full-stack framework' },
+    { label: 'elysia',     description: 'Bun-native framework' },
+    { label: 'h3',         description: 'minimal server framework' },
+    { label: 'polka',      description: 'micro web server' },
+    { label: 'restify',    description: 'REST API framework' },
+    { label: 'feathers',   description: 'real-time apps framework' },
+  ])
+  console.log(pkg ? `  Picked: ${pkg.label}` : '  Cancelled')
+  console.log()
+
+  // ─── scroll viewport ─────────────────────────────────────────────────────
+  console.log('— Scroll viewport (maxHeight: 5) —')
+  const scrollSelect = new Select({ maxHeight: 5 })
+  const tz = await scrollSelect.ask('Timezone?', [
+    { label: 'UTC' },
+    { label: 'America/New_York' },
+    { label: 'America/Chicago' },
+    { label: 'America/Denver' },
+    { label: 'America/Los_Angeles' },
+    { label: 'Europe/London' },
+    { label: 'Europe/Paris' },
+    { label: 'Europe/Berlin' },
+    { label: 'Asia/Tokyo' },
+    { label: 'Asia/Shanghai' },
+    { label: 'Asia/Kolkata' },
+    { label: 'Australia/Sydney' },
+  ])
+  console.log(tz ? `  Picked: ${tz.label}` : '  Skipped')
+  console.log()
+
+  // ─── search + scroll combined ────────────────────────────────────────────
+  console.log('— Search + scroll (type to filter, maxHeight: 4) —')
+  const searchScroll = new Select({ search: true, maxHeight: 4, skipLabel: 'Skip' })
+  const country = await searchScroll.ask('Country?', [
+    { label: 'United States' }, { label: 'United Kingdom' }, { label: 'Canada' },
+    { label: 'Australia' },     { label: 'Germany' },        { label: 'France' },
+    { label: 'Japan' },         { label: 'South Korea' },    { label: 'Brazil' },
+    { label: 'India' },         { label: 'Mexico' },         { label: 'Spain' },
+    { label: 'Italy' },         { label: 'Netherlands' },    { label: 'Sweden' },
+    { label: 'Norway' },        { label: 'Denmark' },        { label: 'Poland' },
+    { label: 'Singapore' },     { label: 'New Zealand' },
+  ])
+  console.log(country ? `  Picked: ${country.label}` : '  Skipped')
+  console.log()
+
   // ─── followed by a spinner ───────────────────────────────────────────────
   if (lang) {
     const spinner = new Spinner({ frames: F.braille, interval: 80, text: `Installing ${lang.label} toolchain…` })

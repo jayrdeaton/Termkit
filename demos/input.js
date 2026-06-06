@@ -1,4 +1,4 @@
-const { input, Spinner } = require('../dist')
+const { input, confirm, Spinner } = require('../dist')
 
 ;(async () => {
   console.log('— Server Setup Wizard —\n')
@@ -21,18 +21,24 @@ const { input, Spinner } = require('../dist')
 
   const https = await input('Enable HTTPS?', { type: 'boolean', default: false })
 
-  let secret, confirm
+  let secret, confirmPass
   do {
     secret = await input('Admin password?', { mask: true, minLength: 8 })
-    confirm = await input('Confirm password?', { mask: true })
-    if (confirm !== secret) console.log('\n  Passwords do not match, try again\n')
-  } while (confirm !== secret)
+    confirmPass = await input('Confirm password?', { mask: true })
+    if (confirmPass !== secret) console.log('\n  Passwords do not match, try again\n')
+  } while (confirmPass !== secret)
 
   console.log('\n— Inline —\n')
 
   const host = await input('Host:', { inline: true, default: 'localhost' })
   const inlinePort = await input('Port:', { inline: true, type: 'number', default: 8080, min: 1, max: 65535 })
   const debug = await input('Debug?', { inline: true, type: 'boolean', default: false })
+
+  console.log('\n— confirm() shorthand —\n')
+
+  const deploy = await confirm('Deploy to production?', { default: false })
+  console.log(`  Answer: ${deploy}`)
+  console.log()
 
   const spinner = new Spinner({ text: 'Generating config…' })
   spinner.start()

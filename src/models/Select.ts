@@ -1,5 +1,6 @@
 import { config } from '@/config'
-import { applyShimmer, BLUE, colorText, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR } from '@/utils/color'
+import { applyShimmer, BLUE, colorText, formatColor, HIDE_CURSOR, interpolateColor, parseHex, RESET, resolveColor, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR } from '@/utils/color'
+import { registerCleanup } from '@/utils/cleanup'
 import { stringLength } from '@/utils/stringLength'
 
 export interface SelectItem {
@@ -18,6 +19,8 @@ export interface SelectOptions {
   colorCycle?: number
   shimmer?: number
   interval?: number
+  search?: boolean
+  maxHeight?: number
 }
 
 const CLEAR_LINE = '\x1b[2K'
@@ -33,12 +36,14 @@ export class Select {
   private colorCycle: number
   private shimmer: number
   private interval: number
+  private searchEnabled: boolean
+  private maxHeight: number | undefined
   private _parsedColors: RgbColor[]
   private _colorOffset: number = 0
   private _shimmerPhase: number = 0
 
   constructor(options: SelectOptions = {}) {
-    this.promptColor = options.promptColor ?? GREEN
+    this.promptColor = options.promptColor ?? resolveColor(config.color)
     this.promptGlyph = options.promptGlyph ?? (config.glyphs ? '◆' : '>')
     this.descriptionColor = options.descriptionColor ?? BLUE
     this.skipLabel = options.skipLabel ?? 'Skip'
@@ -47,7 +52,9 @@ export class Select {
     this.colorCycle = options.colorCycle ?? 1.0
     this.shimmer = options.shimmer ?? 0
     this.interval = options.interval ?? 80
-    const colors = options.colors ?? ['#a855f7', '#22c55e']
+    this.searchEnabled = options.search ?? false
+    this.maxHeight = options.maxHeight
+    const colors = options.colors ?? config.pulseColors
     this._parsedColors = colors.length >= 2 ? colors.map(parseHex) : []
   }
 
@@ -62,8 +69,21 @@ export class Select {
   async ask<T extends SelectItem>(prompt: string, items: T[]): Promise<T | null> {
     if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error('Select requires an interactive terminal')
 
-    const allItems = [...items, { label: this.skipLabel } as T]
     let selectedIndex = 0
+    let viewportOffset = 0
+    let searchQuery = ''
+    let lastDrawnLines = 0
+
+    const skipItem = { label: this.skipLabel } as T
+
+    const getFiltered = (): T[] => {
+      if (!this.searchEnabled || searchQuery === '') return items
+      const q = searchQuery.toLowerCase()
+      return items.filter(item =>
+        item.label.toLowerCase().includes(q) ||
+        (item.description?.toLowerCase().includes(q) ?? false)
+      )
+    }
 
     process.stdout.write(HIDE_CURSOR)
     const glyph = this.promptGlyph ? `${colorText(this.promptColor, this.promptGlyph)} ` : ''
@@ -71,23 +91,52 @@ export class Select {
     process.stdout.write(`${glyph}${prompt}\n`)
 
     const renderList = (redraw: boolean) => {
-      if (redraw) process.stdout.write(CURSOR_UP(allItems.length))
+      const filtered = getFiltered()
+      const allItems: T[] = [...filtered, skipItem]
+
+      // clamp selectedIndex after filter changes
+      if (selectedIndex >= allItems.length) selectedIndex = allItems.length - 1
+
+      // auto-scroll viewport
+      if (this.maxHeight) {
+        if (selectedIndex < viewportOffset) viewportOffset = selectedIndex
+        else if (selectedIndex >= viewportOffset + this.maxHeight) viewportOffset = selectedIndex - this.maxHeight + 1
+        viewportOffset = Math.max(0, Math.min(viewportOffset, Math.max(0, allItems.length - this.maxHeight)))
+      }
+
+      const visibleStart = this.maxHeight ? viewportOffset : 0
+      const visibleEnd = this.maxHeight ? Math.min(allItems.length, viewportOffset + this.maxHeight) : allItems.length
+
+      if (redraw) {
+        if (lastDrawnLines > 0) process.stdout.write(CURSOR_UP(lastDrawnLines))
+        process.stdout.write('\r\x1b[0J')
+      }
+      lastDrawnLines = 0
+
+      if (this.searchEnabled) {
+        process.stdout.write(`\r${indent}${colorText(this.promptColor, '/')} ${searchQuery}|\n`)
+        lastDrawnLines++
+      }
+
       const pulse = this.pulseColor()
-      for (let i = 0; i < allItems.length; i++) {
+      for (let i = visibleStart; i < visibleEnd; i++) {
         const item = allItems[i]
         const isSelected = i === selectedIndex
+        const isSkip = i === filtered.length
+        const relativeNum = i - visibleStart + 1
+        const numStr = isSkip ? '0.' : `${relativeNum}.`
         const desc = item.description ? ` ${colorText(this.descriptionColor, `— ${item.description}`)}` : ''
-        const num = `${i === items.length ? 0 : i + 1}.`
         let marker: string, tail: string
         if (isSelected && pulse) {
           marker = `${pulse}${this.selectedPrefix}${RESET}`
           tail = ` ${pulse}${this.selectedSuffix}${RESET}`
         } else {
           const fallback = isSelected ? this.promptColor : ''
-          marker = fallback ? colorText(fallback, this.selectedPrefix) : ' '.repeat(this.selectedPrefix.length)
+          marker = fallback ? colorText(fallback, this.selectedPrefix) : ' '.repeat(stringLength(this.selectedPrefix))
           tail = isSelected ? ` ${colorText(this.promptColor, this.selectedSuffix)}` : ''
         }
-        process.stdout.write(`\r${CLEAR_LINE}${indent}${marker} ${num} ${item.label}${desc}${tail}\n`)
+        process.stdout.write(`\r${indent}${marker} ${numStr} ${item.label}${desc}${tail}\n`)
+        lastDrawnLines++
       }
     }
 
@@ -96,11 +145,17 @@ export class Select {
     return new Promise((resolve) => {
       let timer: ReturnType<typeof setInterval> | null = null
 
+      const deregisterCleanup = registerCleanup(() => {
+        if (timer) { clearInterval(timer); timer = null }
+        process.stdin.setRawMode(false)
+        process.stdin.pause()
+        process.stdin.removeListener('data', onKey)
+        process.stdout.write(SHOW_CURSOR)
+      })
+
       const cleanup = () => {
-        if (timer) {
-          clearInterval(timer)
-          timer = null
-        }
+        deregisterCleanup()
+        if (timer) { clearInterval(timer); timer = null }
         process.stdin.setRawMode(false)
         process.stdin.pause()
         process.stdin.removeListener('data', onKey)
@@ -119,6 +174,9 @@ export class Select {
 
       const onKey = (key: Buffer) => {
         const str = key.toString()
+        const filtered = getFiltered()
+        const allItems: T[] = [...filtered, skipItem]
+
         if (str === '\x1b[A') {
           selectedIndex = (selectedIndex - 1 + allItems.length) % allItems.length
           renderList(true)
@@ -127,14 +185,29 @@ export class Select {
           renderList(true)
         } else if (str === '\r' || str === '\n') {
           cleanup()
-          resolve(selectedIndex === items.length ? null : (items[selectedIndex] ?? null))
+          resolve(selectedIndex === filtered.length ? null : (filtered[selectedIndex] ?? null))
         } else if (str === '\x03') {
           cleanup()
-          process.exit()
+          process.exit(130)
+        } else if (this.searchEnabled) {
+          if (str === '\x7f' || str === '\x08') {
+            searchQuery = searchQuery.slice(0, -1)
+            const newFiltered = getFiltered()
+            if (selectedIndex >= newFiltered.length + 1) selectedIndex = Math.max(0, newFiltered.length)
+            viewportOffset = 0
+            renderList(true)
+          } else if (str.length === 1 && str >= ' ') {
+            searchQuery += str
+            selectedIndex = 0
+            viewportOffset = 0
+            renderList(true)
+          }
         } else {
           const n = parseInt(str)
           if (!isNaN(n) && n >= 0 && n <= Math.min(items.length, 9)) {
-            selectedIndex = n === 0 ? items.length : n - 1
+            const visibleStart = this.maxHeight ? viewportOffset : 0
+            selectedIndex = n === 0 ? allItems.length - 1 : visibleStart + n - 1
+            selectedIndex = Math.max(0, Math.min(selectedIndex, allItems.length - 1))
             renderList(true)
           }
         }

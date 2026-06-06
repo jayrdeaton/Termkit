@@ -1,10 +1,14 @@
 export const RESET = '\x1b[0m'
 export const SHOW_CURSOR = '\x1b[?25h'
 export const HIDE_CURSOR = '\x1b[?25l'
+export const BOLD = '\x1b[1m'
+export const FAINT = '\x1b[2m'
 export const GREEN = '\x1b[32m'
 export const RED = '\x1b[31m'
 export const YELLOW = '\x1b[33m'
 export const BLUE = '\x1b[34m'
+export const MAGENTA = '\x1b[35m'
+export const CYAN = '\x1b[36m'
 export const DIM = 0.35
 export const SHIMMER_SPEED = 0.5 // cycles per second
 
@@ -66,6 +70,17 @@ export function dimColor(c: RgbColor): RgbColor {
 export function shimmerFactor(t: number, phase: number, amplitude: number): number {
   const wave = 0.5 + 0.5 * Math.sin(2 * Math.PI * (t - phase))
   return 1 - amplitude * (1 - wave)
+}
+
+export function resolveColor(color: string | number): string {
+  if (typeof color === 'number') return `\x1b[38;5;${color}m`
+  if (color.startsWith('#')) return color
+  const map: Record<string, string> = {
+    black: '\x1b[30m', red: '\x1b[31m', green: '\x1b[32m',
+    yellow: '\x1b[33m', blue: '\x1b[34m', magenta: '\x1b[35m',
+    cyan: '\x1b[36m', white: '\x1b[37m',
+  }
+  return map[color] ?? '\x1b[35m'
 }
 
 export function applyShimmer(color: RgbColor, t: number, phase: number, amplitude: number): RgbColor {

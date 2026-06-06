@@ -1,5 +1,6 @@
 import { config } from '@/config'
 import { applyShimmer, BLUE, colorText, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
+import { registerCleanup } from '@/utils/cleanup'
 import { stringLength } from '@/utils/stringLength'
 
 export interface SpinnerOptions {
@@ -54,6 +55,7 @@ export class Spinner {
   private _warnColor: string
   private _infoColor: string
   private _glyphs: boolean
+  private _cleanupDeregister: (() => void) | null = null
 
   constructor(options: SpinnerOptions = {}) {
     this.running = false
@@ -98,11 +100,18 @@ export class Spinner {
     if (!process.stdout.isTTY) return
     this.running = true
     process.stdout.write(HIDE_CURSOR)
+    this._cleanupDeregister = registerCleanup(() => {
+      this.running = false
+      process.stdout.clearLine?.(0)
+      process.stdout.write(SHOW_CURSOR)
+    })
     this.run()
   }
 
   stop(message?: string): this {
     this.running = false
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
       this.clear()
       process.stdout.write(SHOW_CURSOR)
@@ -118,6 +127,8 @@ export class Spinner {
 
   succeed(string?: string): this {
     this.running = false
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
       this.clear()
       const glyph = this._glyphs ? colorText(this._successColor, '✔') + ' ' : ''
@@ -130,6 +141,8 @@ export class Spinner {
 
   fail(string?: string): this {
     this.running = false
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
       this.clear()
       const glyph = this._glyphs ? colorText(this._failColor, '✖') + ' ' : ''
@@ -142,6 +155,8 @@ export class Spinner {
 
   warn(string?: string): this {
     this.running = false
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
       this.clear()
       const glyph = this._glyphs ? colorText(this._warnColor, '⚠') + ' ' : ''
@@ -154,6 +169,8 @@ export class Spinner {
 
   info(string?: string): this {
     this.running = false
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
       this.clear()
       const glyph = this._glyphs ? colorText(this._infoColor, 'ℹ') + ' ' : ''

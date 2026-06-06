@@ -608,3 +608,107 @@ describe('Bar resize', () => {
     offSpy.mockRestore()
   })
 })
+
+describe('Bar ETA / rate tracking', () => {
+  it('rate getter returns 0 before any ticks', () => {
+    const bar = new Bar()
+    bar.track(100)
+    expect(bar.rate).toBe(0)
+  })
+
+  it('eta getter returns 0 before any ticks', () => {
+    const bar = new Bar()
+    bar.track(100)
+    expect(bar.eta).toBe(0)
+  })
+
+  it('tick() sets progress proportional to total', () => {
+    const bar = new Bar()
+    bar.track(100)
+    bar.tick(50)
+    expect(bar.progress).toBe(0.5)
+  })
+
+  it('tick() defaults to incrementing by 1', () => {
+    const bar = new Bar()
+    bar.track(100)
+    bar.tick()
+    bar.tick()
+    expect(bar.progress).toBeCloseTo(0.02)
+  })
+
+  it('tick() clamps progress at 1 when over-ticked', () => {
+    const bar = new Bar()
+    bar.track(10)
+    bar.tick(20)
+    expect(bar.progress).toBe(1)
+  })
+
+  it('rate getter returns units per second', () => {
+    jest.setSystemTime(0)
+    const bar = new Bar()
+    bar.track(100)
+    jest.setSystemTime(2000)
+    bar.tick(40)
+    expect(bar.rate).toBeCloseTo(20, 0)
+  })
+
+  it('eta getter returns estimated seconds remaining', () => {
+    jest.setSystemTime(0)
+    const bar = new Bar()
+    bar.track(100)
+    jest.setSystemTime(1000)
+    bar.tick(25)
+    // rate = 25/s, remaining = 75 → eta ≈ 3s
+    expect(bar.eta).toBeCloseTo(3, 0)
+  })
+
+  it('eta getter returns 0 when all units are complete', () => {
+    jest.setSystemTime(0)
+    const bar = new Bar()
+    bar.track(10)
+    jest.setSystemTime(1000)
+    bar.tick(10)
+    expect(bar.eta).toBe(0)
+  })
+
+  it('track() returns this for chaining', () => {
+    expect(new Bar().track(100)).toBeInstanceOf(Bar)
+  })
+
+  it('tick() returns this for chaining', () => {
+    const bar = new Bar()
+    bar.track(100)
+    expect(bar.tick(10)).toBeInstanceOf(Bar)
+  })
+
+  it('ETA suffix appears in rendered frames after tick', () => {
+    jest.setSystemTime(0)
+    const bar = new Bar({ length: 80, progress: 0 })
+    bar.track(100, { showRate: true, showEta: true })
+    jest.setSystemTime(1000)
+    bar.tick(50)
+    bar.start()
+    jest.runOnlyPendingTimers()
+    const etaFrame = frames().find(f => f.includes('/s'))
+    expect(etaFrame).toBeDefined()
+    expect(etaFrame).toContain('ETA')
+    bar.stop()
+  })
+
+  it('bar shrinks to accommodate ETA suffix so line does not overflow', () => {
+    jest.setSystemTime(0)
+    const bar = new Bar({ length: 40, progress: 0 })
+    bar.track(100, { showRate: true, showEta: true })
+    jest.setSystemTime(1000)
+    bar.tick(10)
+    bar.start()
+    jest.runOnlyPendingTimers()
+    const etaFrame = frames().find(f => f.includes('/s'))
+    if (etaFrame) {
+      const visual = etaFrame.replace(/\r$/, '').replace(/\x1b\[[^a-zA-Z]*[a-zA-Z]/g, '')
+      expect(visual.length).toBeLessThanOrEqual(40)
+    }
+    bar.stop()
+  })
+})

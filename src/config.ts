@@ -4,18 +4,21 @@ const isLegacyTerminal = process.env.TERM === 'dumb' || (process.platform === 'w
 
 interface TermKitConfig {
   color: HelpColor
+  pulseColors: string[]
   glyphs: boolean
   interactive: boolean
 }
 
 export const config: TermKitConfig = {
   color: 'cyan',
+  pulseColors: ['#06b6d4', '#67e8f9'],
   glyphs: !isLegacyTerminal,
   interactive: false
 }
 
 export function configure(opts: Partial<TermKitConfig>): void {
   if (opts.color) config.color = opts.color
+  if (opts.pulseColors) config.pulseColors = opts.pulseColors
   if (opts.glyphs !== undefined) config.glyphs = opts.glyphs
   if (opts.interactive !== undefined) config.interactive = opts.interactive
 }

@@ -1,4 +1,5 @@
 import { BLUE, colorText, GREEN, RED, YELLOW } from '@/utils/color'
+import { markup, type MarkupOptions } from '@/models/Markup'
 
 export interface LogOptions {
   successColor?: string
@@ -45,6 +46,10 @@ export class Log {
 
   info(message?: string): void {
     this.write('ℹ', this._infoColor, message)
+  }
+
+  data(value?: unknown, options?: MarkupOptions): void {
+    process.stdout.write(`${markup(value, options)}\n`)
   }
 }
 

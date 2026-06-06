@@ -1,4 +1,5 @@
 import { ansiColor, applyShimmer, BLUE, colorText, dimColor, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
+import { registerCleanup } from '@/utils/cleanup'
 import { stringLength } from '@/utils/stringLength'
 
 export type BarMode = 'bounce' | 'loop' | 'loop-reverse'
@@ -28,6 +29,9 @@ export interface BarOptions {
   warnColor?: string
   infoColor?: string
   glyphs?: boolean
+  showRate?: boolean
+  showEta?: boolean
+  rateUnit?: string
 }
 
 export class Bar {
@@ -54,6 +58,10 @@ export class Bar {
   onLoop: (() => void) | undefined
   onComplete: (() => void) | undefined
 
+  // used by MultiBar — not intended for direct external use
+  _isManaged = false
+  _managedFinalLine: string | null = null
+
   private running: boolean
   private forwardMotion: boolean
   private position: number
@@ -71,11 +79,19 @@ export class Bar {
   private _completed: boolean = false
   private _autoLength: boolean
   private _resizeListener: (() => void) | null = null
+  private _cleanupDeregister: (() => void) | null = null
   private _successColor: string
   private _failColor: string
   private _warnColor: string
   private _infoColor: string
   private _glyphs: boolean
+  private _total: number | null = null
+  private _tickCount: number = 0
+  private _startTime: number | null = null
+  private _showRate: boolean
+  private _showEta: boolean
+  private _rateUnit: string
+  private _etaSuffix: string = ''
 
   constructor(options: BarOptions = {}) {
     this.running = false
@@ -106,6 +122,9 @@ export class Bar {
     this._warnColor = options.warnColor ?? YELLOW
     this._infoColor = options.infoColor ?? BLUE
     this._glyphs = options.glyphs ?? true
+    this._showRate = options.showRate ?? false
+    this._showEta = options.showEta ?? false
+    this._rateUnit = options.rateUnit ?? ''
   }
 
   get colors(): string[] {
@@ -161,14 +180,22 @@ export class Bar {
   }
 
   start(): void {
+    if (this._isManaged) return
     if (!process.stdout.isTTY) return
     this.running = true
     process.stdout.write(HIDE_CURSOR)
+    this._cleanupDeregister = registerCleanup(() => {
+      this.running = false
+      if (this._resizeListener) {
+        process.stdout.off('resize', this._resizeListener)
+        this._resizeListener = null
+      }
+      process.stdout.clearLine?.(0)
+      process.stdout.write(SHOW_CURSOR)
+    })
     if (this._autoLength) {
       this._resizeListener = () => {
         this.length = process.stdout.columns ?? 80
-        // erase from cursor to end of screen — clears wrapped ghost lines
-        // regardless of how many resize events fired between renders
         process.stdout.write('\x1b[0J')
       }
       process.stdout.on('resize', this._resizeListener)
@@ -178,6 +205,12 @@ export class Bar {
 
   stop(message?: string): this {
     this.running = false
+    if (this._isManaged) {
+      this._managedFinalLine = message ?? ''
+      return this
+    }
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
       if (this._resizeListener) {
         process.stdout.off('resize', this._resizeListener)
@@ -195,13 +228,63 @@ export class Bar {
     return this
   }
 
+  track(total: number, options?: { unit?: string; showRate?: boolean; showEta?: boolean }): this {
+    this._total = total
+    this._tickCount = 0
+    this._startTime = Date.now()
+    this._etaSuffix = ''
+    if (options?.unit !== undefined) this._rateUnit = options.unit
+    if (options?.showRate !== undefined) this._showRate = options.showRate
+    if (options?.showEta !== undefined) this._showEta = options.showEta
+    if (!this._showRate && !this._showEta) { this._showRate = true; this._showEta = true }
+    return this
+  }
+
+  tick(n = 1): this {
+    this._tickCount += n
+    if (this._total !== null && this._startTime !== null) {
+      this.progress = Math.min(1, this._tickCount / this._total)
+      const elapsed = (Date.now() - this._startTime) / 1000
+      const rate = elapsed > 0 ? this._tickCount / elapsed : 0
+      const remaining = this._total - this._tickCount
+
+      const parts: string[] = []
+      if (this._showRate) {
+        const rateStr = rate >= 1000 ? `${(rate / 1000).toFixed(1)}k` : rate >= 1 ? rate.toFixed(1) : rate.toFixed(2)
+        parts.push(`${rateStr}/s${this._rateUnit ? ` ${this._rateUnit}` : ''}`)
+      }
+      if (this._showEta && remaining > 0) {
+        const eta = rate > 0 ? remaining / rate : 0
+        const etaStr = eta >= 3600 ? `${Math.floor(eta / 3600)}h${Math.floor((eta % 3600) / 60)}m` : eta >= 60 ? `${Math.floor(eta / 60)}m${Math.floor(eta % 60)}s` : `${Math.ceil(eta)}s`
+        parts.push(`ETA ${etaStr}`)
+      }
+      this._etaSuffix = parts.join(' · ')
+    }
+    return this
+  }
+
+  get rate(): number {
+    if (this._startTime === null || this._tickCount === 0) return 0
+    const elapsed = (Date.now() - this._startTime) / 1000
+    return elapsed > 0 ? this._tickCount / elapsed : 0
+  }
+
+  get eta(): number {
+    if (this._total === null || this.rate === 0) return 0
+    return Math.max(0, (this._total - this._tickCount) / this.rate)
+  }
+
   succeed(string?: string): this {
     this.running = false
+    if (this._isManaged) {
+      const glyph = this._glyphs ? colorText(this._successColor, '✔') + ' ' : ''
+      this._managedFinalLine = `${glyph}${string ?? ''}`
+      return this
+    }
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
-      if (this._resizeListener) {
-        process.stdout.off('resize', this._resizeListener)
-        this._resizeListener = null
-      }
+      if (this._resizeListener) { process.stdout.off('resize', this._resizeListener); this._resizeListener = null }
       this.clear()
       process.stdout.write(`${SHOW_CURSOR}${colorText(this._successColor, '✔')}${string ? ` ${string}` : ''}\n`)
     } else {
@@ -212,11 +295,15 @@ export class Bar {
 
   fail(string?: string): this {
     this.running = false
+    if (this._isManaged) {
+      const glyph = this._glyphs ? colorText(this._failColor, '✖') + ' ' : ''
+      this._managedFinalLine = `${glyph}${string ?? ''}`
+      return this
+    }
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
-      if (this._resizeListener) {
-        process.stdout.off('resize', this._resizeListener)
-        this._resizeListener = null
-      }
+      if (this._resizeListener) { process.stdout.off('resize', this._resizeListener); this._resizeListener = null }
       this.clear()
       process.stdout.write(`${SHOW_CURSOR}${colorText(this._failColor, '✖')}${string ? ` ${string}` : ''}\n`)
     } else {
@@ -227,11 +314,15 @@ export class Bar {
 
   warn(string?: string): this {
     this.running = false
+    if (this._isManaged) {
+      const glyph = this._glyphs ? colorText(this._warnColor, '⚠') + ' ' : ''
+      this._managedFinalLine = `${glyph}${string ?? ''}`
+      return this
+    }
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
-      if (this._resizeListener) {
-        process.stdout.off('resize', this._resizeListener)
-        this._resizeListener = null
-      }
+      if (this._resizeListener) { process.stdout.off('resize', this._resizeListener); this._resizeListener = null }
       this.clear()
       process.stdout.write(`${SHOW_CURSOR}${colorText(this._warnColor, '⚠')}${string ? ` ${string}` : ''}\n`)
     } else {
@@ -242,17 +333,39 @@ export class Bar {
 
   info(string?: string): this {
     this.running = false
+    if (this._isManaged) {
+      const glyph = this._glyphs ? colorText(this._infoColor, 'ℹ') + ' ' : ''
+      this._managedFinalLine = `${glyph}${string ?? ''}`
+      return this
+    }
+    this._cleanupDeregister?.()
+    this._cleanupDeregister = null
     if (process.stdout.isTTY) {
-      if (this._resizeListener) {
-        process.stdout.off('resize', this._resizeListener)
-        this._resizeListener = null
-      }
+      if (this._resizeListener) { process.stdout.off('resize', this._resizeListener); this._resizeListener = null }
       this.clear()
       process.stdout.write(`${SHOW_CURSOR}${colorText(this._infoColor, 'ℹ')}${string ? ` ${string}` : ''}\n`)
     } else {
       process.stdout.write(`${this._glyphs ? `ℹ${string ? ` ${string}` : ''}` : (string ?? '')}\n`)
     }
     return this
+  }
+
+  // Returns the rendered bar line string for the current animation frame.
+  // width overrides this.length for use by MultiBar.
+  renderLine(width?: number): string {
+    return this.buildLine(width)
+  }
+
+  // Advances animation state (color cycle, shimmer, indeterminate position).
+  // Called by MultiBar after reading renderLine() each tick.
+  advanceFrame(): void {
+    const totalLength = this.length
+    const textReserved = this.text ? stringLength(this.text) + 1 : 0
+    const suffixReserved = this._etaSuffix ? stringLength(this._etaSuffix) + 1 : 0
+    const length = Math.max(1, totalLength - textReserved - suffixReserved - stringLength(this.prefixString) - stringLength(this.character) - stringLength(this.suffixString))
+    if (this.progress === undefined) this.advanceIndeterminate(length)
+    if (this.colorCycle > 0) this._colorOffset = (this._colorOffset + (this.colorCycle * this.interval) / 1000) % 1
+    if (this.shimmer > 0) this._shimmerPhase = (this._shimmerPhase + (SHIMMER_SPEED * this.interval) / 1000) % 1
   }
 
   private clear(): void {
@@ -283,35 +396,8 @@ export class Bar {
     return fg || bg ? fg + bg + char + RESET : char
   }
 
-  private writeLine(working: string): void {
-    const t = this.text
-    const line = this.reverse ? (t ? `${t} ${working}` : working) : t ? `${working} ${t}` : working
-    process.stdout.write(`${line}\x1b[K\r`)
-  }
-
-  private run(): void {
-    const textReserved = this.text ? stringLength(this.text) + 1 : 0
-    const length = Math.max(1, this.length - textReserved - stringLength(this.prefixString) - stringLength(this.character) - stringLength(this.suffixString))
-
-    if (this.progress !== undefined) {
-      this.renderDeterminate(length)
-    } else {
-      this.renderIndeterminate(length)
-    }
-
-    if (this.colorCycle > 0) {
-      this._colorOffset = (this._colorOffset + (this.colorCycle * this.interval) / 1000) % 1
-    }
-    if (this.shimmer > 0) {
-      this._shimmerPhase = (this._shimmerPhase + (SHIMMER_SPEED * this.interval) / 1000) % 1
-    }
-
-    setTimeout(() => {
-      if (this.running) this.run()
-    }, this.interval)
-  }
-
-  private renderDeterminate(length: number): void {
+  private buildDeterminate(length: number): string {
+    const charWidth = stringLength(this.character)
     const clamped = Math.max(0, Math.min(1, this.progress!))
     const filled = Math.round(clamped * length)
     let working = this.prefixString
@@ -321,37 +407,31 @@ export class Bar {
     }
     for (let i = filled; i < length; i++) {
       const t = length > 1 ? i / (length - 1) : 0
-      working += this.colorFillChar(this.afterEmpty, t)
+      // pad each empty position to charWidth so the bar stays constant width
+      for (let j = 0; j < charWidth; j++) {
+        working += this.colorFillChar(this.afterEmpty, t)
+      }
     }
     working += this.suffixString
-    this.writeLine(working)
-
     if (clamped >= 1 && !this._completed) {
       this._completed = true
       this.onComplete?.()
     } else if (clamped < 1) {
       this._completed = false
     }
+    return working
   }
 
-  private renderIndeterminate(length: number): void {
-    if (this.position > length) {
-      this.position = length
-      this.forwardMotion = false
-    }
-    if (this.position < 1) {
-      this.position = 1
-      this.forwardMotion = true
-    }
-
+  private buildIndeterminate(length: number): string {
+    const pos = Math.max(1, Math.min(length, this.position))
     let working = this.prefixString
     let i = 1
-    while (i < this.position) {
+    while (i < pos) {
       const t = length > 1 ? (i - 1) / (length - 1) : 0
       working += this.colorFillChar(this.beforeEmpty, t)
       i++
     }
-    const charT = length > 1 ? (this.position - 1) / (length - 1) : 0
+    const charT = length > 1 ? (pos - 1) / (length - 1) : 0
     working += this.colorChar(charT)
     i++
     while (i <= length) {
@@ -360,35 +440,50 @@ export class Bar {
       i++
     }
     working += this.suffixString
-    this.writeLine(working)
+    return working
+  }
 
+  private advanceIndeterminate(length: number): void {
+    if (this.position > length) { this.position = length; this.forwardMotion = false }
+    if (this.position < 1) { this.position = 1; this.forwardMotion = true }
     if (this.mode === 'loop') {
       this.position++
-      if (this.position > length) {
-        this.position = 1
-        this.onLoop?.()
-      }
+      if (this.position > length) { this.position = 1; this.onLoop?.() }
     } else if (this.mode === 'loop-reverse') {
       this.position--
-      if (this.position < 1) {
-        this.position = length
-        this.onLoop?.()
-      }
+      if (this.position < 1) { this.position = length; this.onLoop?.() }
     } else {
       if (this.forwardMotion) {
         this.position++
-        if (this.position >= length) {
-          this.forwardMotion = false
-          this.onBounce?.()
-        }
+        if (this.position >= length) { this.forwardMotion = false; this.onBounce?.() }
       } else {
         this.position--
-        if (this.position <= 1) {
-          this.forwardMotion = true
-          this.onBounce?.()
-        }
+        if (this.position <= 1) { this.forwardMotion = true; this.onBounce?.() }
       }
     }
+  }
+
+  private buildLine(width?: number): string {
+    const totalLength = width ?? this.length
+    const charWidth = stringLength(this.character)
+    const textReserved = this.text ? stringLength(this.text) + 1 : 0
+    const suffixReserved = this._etaSuffix ? stringLength(this._etaSuffix) + 1 : 0
+    const available = totalLength - textReserved - suffixReserved - stringLength(this.prefixString) - stringLength(this.suffixString)
+    const length = this.progress !== undefined
+      // Determinate: every position (filled or empty) is charWidth wide → constant bar width
+      ? Math.max(1, Math.floor((available - 1) / charWidth))
+      // Indeterminate: one position uses character, rest use 1-char fill (unchanged formula)
+      : Math.max(1, available - charWidth)
+    const working = this.progress !== undefined ? this.buildDeterminate(length) : this.buildIndeterminate(length)
+    const t = this.text
+    const suffix = this._etaSuffix ? ` ${this._etaSuffix}` : ''
+    return this.reverse ? (t ? `${t} ${working}` : working) : t ? `${working} ${t}${suffix}` : `${working}${suffix}`
+  }
+
+  private run(): void {
+    process.stdout.write(`${this.buildLine()}\x1b[K\r`)
+    this.advanceFrame()
+    setTimeout(() => { if (this.running) this.run() }, this.interval)
   }
 }
 

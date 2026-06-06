@@ -1,19 +1,9 @@
-import { config, type HelpColor } from '@/config'
+import { config } from '@/config'
 import { Input, type InputType } from '@/models/Input'
 import { Select } from '@/models/Select'
+import { resolveColor } from '@/utils/color'
 import type { Variable } from '@/models/Variable'
 import type { VariableType } from '@/types'
-
-function resolveColor(color: HelpColor): string {
-  if (typeof color === 'number') return `\x1b[38;5;${color}m`
-  if (color.startsWith('#')) return color
-  const map: Record<string, string> = {
-    black: '\x1b[30m', red: '\x1b[31m', green: '\x1b[32m',
-    yellow: '\x1b[33m', blue: '\x1b[34m', magenta: '\x1b[35m',
-    cyan: '\x1b[36m', white: '\x1b[37m',
-  }
-  return map[color] ?? '\x1b[35m'
-}
 
 export function coerce(value: string, type: VariableType, enumValues: string[] | null, min: number | null = null, max: number | null = null): unknown {
   if (type === 'number' || type === 'integer') {
@@ -66,7 +56,7 @@ export async function findVariable(array: string[], variable: Variable, commands
       result.push(coerce(array.shift()!, variable.type, variable.enum, variable.min, variable.max))
     }
     if (result.length === 0 && variable.required) {
-      if (config.interactive) {
+      if (config.interactive && process.stdout.isTTY) {
         try {
           const value = await promptForVariable(variable)
           if (value !== null) return [value]
@@ -86,7 +76,7 @@ export async function findVariable(array: string[], variable: Variable, commands
   }
 
   if (variable.required) {
-    if (config.interactive) {
+    if (config.interactive && process.stdout.isTTY) {
       try {
         const value = await promptForVariable(variable)
         if (value !== null) return value

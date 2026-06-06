@@ -96,3 +96,26 @@ at(38500, () => {
 fill(38700, 4500, bar)
 
 at(44000, () => { bar.stop(); bar.succeed('Bar done!') })
+
+// ─── ETA / rate tracking ──────────────────────────────────────────────────────
+
+setTimeout(() => {
+  const total = 200
+  const eta = new Bar({ colors: Bar.COLORS.cool, progress: 0, character: '─' })
+  eta.track(total, { showRate: true, showEta: true, unit: 'files' })
+  eta.message('Processing…')
+  eta.start()
+
+  let done = 0
+  const tick = setInterval(() => {
+    const batch = Math.floor(Math.random() * 6) + 1
+    done = Math.min(done + batch, total)
+    eta.tick(batch)
+    eta.message(`Processing… ${done}/${total}`)
+    if (done >= total) {
+      clearInterval(tick)
+      eta.stop()
+      eta.succeed(`Done — ${total} files processed`)
+    }
+  }, 80)
+}, 45000)

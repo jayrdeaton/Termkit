@@ -107,6 +107,7 @@ export class Input<T extends InputType = 'string'> {
     if (this.type === 'boolean') return this.askBoolean(prompt) as Promise<InputReturn<T>>
 
     let inputStr = ''
+    let cursorPos = 0
     let error: string | null = null
     let hasErrorLine = false
 
@@ -145,6 +146,11 @@ export class Input<T extends InputType = 'string'> {
         }
         hasErrorLine = false
       }
+
+      // Position cursor within the input text when not at end
+      if (inputStr.length > 0 && cursorPos < inputStr.length && !error) {
+        process.stdout.write(`\x1b[${inputStr.length - cursorPos}D`)
+      }
     }
 
     renderInput(false)
@@ -174,6 +180,24 @@ export class Input<T extends InputType = 'string'> {
             cleanup()
             resolve(usingDefault ? (this.defaultValue as InputReturn<T>) : this.coerce(value))
           }
+        } else if (str === '\x1b[D') {
+          cursorPos = Math.max(0, cursorPos - 1)
+          renderInput(true)
+        } else if (str === '\x1b[C') {
+          cursorPos = Math.min(inputStr.length, cursorPos + 1)
+          renderInput(true)
+        } else if (str === '\x1b[H' || str === '\x1b[1~' || str === '\x01') {
+          cursorPos = 0
+          renderInput(true)
+        } else if (str === '\x1b[F' || str === '\x1b[4~' || str === '\x05') {
+          cursorPos = inputStr.length
+          renderInput(true)
+        } else if (str === '\x1b[3~') {
+          if (cursorPos < inputStr.length) {
+            inputStr = inputStr.slice(0, cursorPos) + inputStr.slice(cursorPos + 1)
+            error = null
+            renderInput(true)
+          }
         } else if (str === '\x1b') {
           if (!this.required) {
             cleanup()
@@ -183,12 +207,16 @@ export class Input<T extends InputType = 'string'> {
           cleanup()
           process.exit()
         } else if (str === '\x7f' || str === '\b') {
-          inputStr = inputStr.slice(0, -1)
-          error = null
-          renderInput(true)
+          if (cursorPos > 0) {
+            inputStr = inputStr.slice(0, cursorPos - 1) + inputStr.slice(cursorPos)
+            cursorPos--
+            error = null
+            renderInput(true)
+          }
         } else if (str.charCodeAt(0) >= 0x20) {
           if (this.maxLength !== null && inputStr.length >= this.maxLength) return
-          inputStr += str
+          inputStr = inputStr.slice(0, cursorPos) + str + inputStr.slice(cursorPos)
+          cursorPos++
           error = null
           renderInput(true)
         }
@@ -258,4 +286,11 @@ export function input(prompt: string, options: InputOptions & { type: 'boolean' 
 export function input(prompt: string, options?: InputOptions): Promise<string | null>
 export async function input(prompt: string, options: InputOptions = {}): Promise<string | number | boolean | null> {
   return new Input(options).ask(prompt)
+}
+
+export async function confirm(
+  prompt: string,
+  options?: Pick<InputOptions, 'default' | 'required' | 'promptColor' | 'promptGlyph' | 'inline'>
+): Promise<boolean | null> {
+  return new Input({ ...options, type: 'boolean' }).ask(prompt) as Promise<boolean | null>
 }

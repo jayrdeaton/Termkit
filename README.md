@@ -600,10 +600,27 @@ await doWork()
 spinner.succeed('Done')
 ```
 
-Update the label while running:
+Update the inline label while running:
 
 ```ts
-spinner.message('Still working…')
+spinner.update('Still working…')
+```
+
+Write a persistent log line while the spinner keeps running. The default glyph is a faint `·`; pass any string — plain or pre-colored — as the second argument to override it:
+
+```ts
+spinner.log('Fetched 42 items')
+spinner.log('Fetched 42 items', '→')
+spinner.log('Fetched 42 items', Color.hex('#00ff00')('✔'))
+spinner.log('Fetched 42 items', '')  // no glyph
+```
+
+The completion methods accept a custom glyph color via `successColor`, `failColor`, `warnColor`, and `infoColor` — the glyph is colored, the message text is left unstyled:
+
+```ts
+const spinner = new Spinner({ successColor: '#a855f7', failColor: '#ef4444' })
+spinner.succeed('Build complete')   // purple ✔
+spinner.fail('Connection refused')  // red ✖
 ```
 
 Built-in frame sets are available on `Spinner.FRAMES`:

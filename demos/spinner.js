@@ -1,4 +1,4 @@
-const { Bar, Spinner } = require('../dist')
+const { Bar, Spinner, Color } = require('../dist')
 
 const C = Bar.COLORS
 const F = Spinner.FRAMES
@@ -40,9 +40,41 @@ const TOTAL = spinnerConfigs.length * SPINNER_EACH
 
 at(TOTAL, () => spinner.stop())
 
+// ─── update() ─────────────────────────────────────────────────────────
+
+const UPDATE_START = TOTAL + 1000
+
+at(UPDATE_START - 500, () => { console.log(); console.log('— update() —') })
+
+at(UPDATE_START, () => {
+  const s = new Spinner({ frames: F.braille, interval: 80, text: 'Starting…' })
+  s.start()
+  setTimeout(() => s.update('Fetching data…'),    800)
+  setTimeout(() => s.update('Processing…'),       1600)
+  setTimeout(() => s.update('Almost done…'),      2400)
+  setTimeout(() => { s.succeed('Finished') },     3200)
+})
+
+// ─── log() ────────────────────────────────────────────────────────────
+
+const LOG_START = UPDATE_START + 4500
+
+at(LOG_START - 500, () => { console.log(); console.log('— log() —') })
+
+at(LOG_START, () => {
+  const s = new Spinner({ frames: F.braille, interval: 80, text: 'Deploying…' })
+  s.start()
+  setTimeout(() => s.log('Building image'),                                      700)
+  setTimeout(() => s.log('Pushed to registry', '→'),                            1400)
+  setTimeout(() => s.log('Container started', Color.hex('#a855f7')('◆')),       2100)
+  setTimeout(() => s.log('Health check passed', Color.hex('#22c55e')('✔')),     2800)
+  setTimeout(() => s.log('No glyph line', ''),                                  3500)
+  setTimeout(() => { s.succeed('Deployed') },                                   4200)
+})
+
 // ─── Status methods ────────────────────────────────────────────────────
 
-const STATUS_START = TOTAL + 1000
+const STATUS_START = LOG_START + 5500
 
 at(STATUS_START - 500, () => { console.log(); console.log('— Status methods —') })
 

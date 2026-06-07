@@ -106,25 +106,25 @@ describe('Spinner text and reverse', () => {
     s.stop()
   })
 
-  it('message() updates text inline without writing to stdout', () => {
+  it('update() updates text inline without writing to stdout', () => {
     const s = new Spinner({ frames: ['-'] })
     s.start()
     mockWrite.mockClear()
-    s.message('updated')
+    s.update('updated')
     expect(s.text).toBe('updated')
     expect(mockWrite).not.toHaveBeenCalled()
     s.stop()
   })
 
-  it('message() returns this for chaining', () => {
+  it('update() returns this for chaining', () => {
     const s = new Spinner()
-    expect(s.message('hello')).toBe(s)
+    expect(s.update('hello')).toBe(s)
   })
 
   it('updated text appears in subsequent frames', () => {
     const s = new Spinner({ frames: ['-'] })
     s.start()
-    s.message('new label')
+    s.update('new label')
     jest.runOnlyPendingTimers()
     const frame = frames()[1]
     expect(frame).toContain('new label')
@@ -143,7 +143,7 @@ describe('Spinner text and reverse', () => {
   it('pads frame to overwrite longer previous text', () => {
     const s = new Spinner({ frames: ['-'], text: 'long label here' })
     s.start()
-    s.message('hi')
+    s.update('hi')
     jest.runOnlyPendingTimers()
     const frame = frames()[1]
     expect(frame).toMatch(/hi\s+\r$/)
@@ -238,6 +238,59 @@ describe('Spinner status methods', () => {
     expect(s.fail()).toBe(s)
     expect(s.warn()).toBe(s)
     expect(s.info()).toBe(s)
+  })
+})
+
+describe('Spinner log method', () => {
+  it('uses faint middle dot as default glyph', () => {
+    const s = new Spinner()
+    s.log('fetching data')
+    const call = mockWrite.mock.calls.find((c) => (c[0] as string).includes('fetching data'))
+    expect(call?.[0]).toContain('·')
+    expect(call?.[0]).toContain('\x1b[2m')
+  })
+
+  it('writes custom glyph and message with a space separator', () => {
+    const s = new Spinner()
+    s.log('fetching data', '→')
+    expect(mockWrite).toHaveBeenCalledWith('→ fetching data\n')
+  })
+
+  it('omits the space when glyph is empty string', () => {
+    const s = new Spinner()
+    s.log('just a message', '')
+    expect(mockWrite).toHaveBeenCalledWith('just a message\n')
+  })
+
+  it('clears the spinner line before writing', () => {
+    const s = new Spinner({ frames: ['-'] })
+    s.start()
+    jest.spyOn(process.stdout, 'clearLine').mockClear()
+    s.log('step done', '✓')
+    expect(process.stdout.clearLine).toHaveBeenCalled()
+    s.stop()
+  })
+
+  it('spinner continues running after log()', () => {
+    const s = new Spinner({ frames: ['A', 'B'] })
+    s.start()
+    const countBefore = mockWrite.mock.calls.length
+    s.log('log line', '→')
+    jest.runOnlyPendingTimers()
+    expect(mockWrite.mock.calls.length).toBeGreaterThan(countBefore + 1)
+    s.stop()
+  })
+
+  it('returns this for chaining', () => {
+    const s = new Spinner()
+    expect(s.log('msg', '→')).toBe(s)
+  })
+
+  it('accepts a pre-colored ANSI glyph string', () => {
+    const s = new Spinner()
+    const coloredGlyph = '\x1b[32m✔\x1b[0m'
+    s.log('colored glyph', coloredGlyph)
+    expect(mockWrite).toHaveBeenCalledWith(`${coloredGlyph} colored glyph\n`)
   })
 })
 

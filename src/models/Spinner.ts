@@ -1,6 +1,6 @@
 import { config } from '@/config'
 import { registerCleanup } from '@/utils/cleanup'
-import { applyShimmer, BLUE, colorText, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
+import { applyShimmer, BLUE, colorText, FAINT, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
 import { stringLength } from '@/utils/stringLength'
 
 export interface SpinnerOptions {
@@ -120,7 +120,7 @@ export class Spinner {
     return this
   }
 
-  message(string: string): this {
+  update(string: string): this {
     this.text = string
     return this
   }
@@ -178,6 +178,14 @@ export class Spinner {
     } else {
       process.stdout.write(`${this._glyphs ? `ℹ ${string ?? ''}` : (string ?? '')}\n`)
     }
+    return this
+  }
+
+  log(message: string, glyph: string = `${FAINT}·${RESET}`): this {
+    if (process.stdout.isTTY) {
+      this.clear()
+    }
+    process.stdout.write(`${glyph ? `${glyph} ` : ''}${message}\n`)
     return this
   }
 

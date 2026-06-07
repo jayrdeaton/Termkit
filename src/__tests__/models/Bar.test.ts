@@ -21,10 +21,12 @@ beforeEach(() => {
   mockWrite.mockClear()
   mockClearLine.mockClear()
   jest.useFakeTimers()
+  Bar.current = null
 })
 
 afterEach(() => {
   jest.useRealTimers()
+  Bar.current = null
 })
 
 describe('Bar constructor', () => {
@@ -43,6 +45,23 @@ describe('Bar constructor', () => {
     expect(bar.interval).toBe(100)
     expect(bar.length).toBe(50)
     expect(bar.mode).toBe('loop')
+  })
+
+  it('accepts text as first argument', () => {
+    const bar = new Bar('Processing...')
+    expect(bar.text).toBe('Processing...')
+  })
+
+  it('accepts text and options as separate arguments', () => {
+    const bar = new Bar('Processing...', { length: 40, interval: 100 })
+    expect(bar.text).toBe('Processing...')
+    expect(bar.length).toBe(40)
+    expect(bar.interval).toBe(100)
+  })
+
+  it('text argument takes precedence over text in options', () => {
+    const bar = new Bar('from arg', { text: 'from options' })
+    expect(bar.text).toBe('from arg')
   })
 })
 
@@ -126,19 +145,19 @@ describe('Bar start/stop', () => {
 })
 
 describe('Bar text and reverse', () => {
-  it('message() updates text inline without writing to stdout', () => {
+  it('update() updates text inline without writing to stdout', () => {
     const bar = new Bar({ length: 40 })
     bar.start()
     mockWrite.mockClear()
-    bar.message('hello')
+    bar.update('hello')
     expect(bar.text).toBe('hello')
     expect(mockWrite).not.toHaveBeenCalled()
     bar.stop()
   })
 
-  it('message() returns this for chaining', () => {
+  it('update() returns this for chaining', () => {
     const bar = new Bar({ length: 40 })
-    expect(bar.message('hello')).toBe(bar)
+    expect(bar.update('hello')).toBe(bar)
   })
 
   it('text appears after the bar by default', () => {
@@ -164,7 +183,7 @@ describe('Bar text and reverse', () => {
   it('updated text appears in subsequent frames', () => {
     const bar = new Bar({ length: 40 })
     bar.start()
-    bar.message('new label')
+    bar.update('new label')
     jest.runOnlyPendingTimers()
     const frame = frames()[1]
     expect(frame).toContain('new label')
@@ -184,15 +203,68 @@ describe('Bar text and reverse', () => {
   it('pads when text shrinks to overwrite stale characters', () => {
     const bar = new Bar({ length: 20, prefix: '[', suffix: ']' })
     bar.start()
-    bar.message('hello world')
+    bar.update('hello world')
     jest.runOnlyPendingTimers()
-    bar.message('')
+    bar.update('')
     jest.runOnlyPendingTimers()
     const frame = frames()[2]
     // without text the bar expands, but \r should still be at end with no \n
     expect(frame).toMatch(/\r$/)
     expect(frame).not.toContain('\n')
     bar.stop()
+  })
+})
+
+describe('Bar log method', () => {
+  it('uses faint middle dot as default glyph', () => {
+    const bar = new Bar({ length: 40 })
+    bar.log('uploading file')
+    const call = mockWrite.mock.calls.find((c) => (c[0] as string).includes('uploading file'))
+    expect(call?.[0]).toContain('·')
+    expect(call?.[0]).toContain('\x1b[2m')
+  })
+
+  it('writes custom glyph and message with a space separator', () => {
+    const bar = new Bar({ length: 40 })
+    bar.log('uploading file', '→')
+    expect(mockWrite).toHaveBeenCalledWith('→ uploading file\n')
+  })
+
+  it('omits the space when glyph is empty string', () => {
+    const bar = new Bar({ length: 40 })
+    bar.log('just a message', '')
+    expect(mockWrite).toHaveBeenCalledWith('just a message\n')
+  })
+
+  it('clears the bar line before writing', () => {
+    const bar = new Bar({ length: 40, interval: 35 })
+    bar.start()
+    jest.spyOn(process.stdout, 'clearLine').mockClear()
+    bar.log('step done', '✓')
+    expect(process.stdout.clearLine).toHaveBeenCalled()
+    bar.stop()
+  })
+
+  it('bar continues running after log()', () => {
+    const bar = new Bar({ length: 40, interval: 35 })
+    bar.start()
+    const countBefore = mockWrite.mock.calls.length
+    bar.log('log line', '→')
+    jest.runOnlyPendingTimers()
+    expect(mockWrite.mock.calls.length).toBeGreaterThan(countBefore + 1)
+    bar.stop()
+  })
+
+  it('returns this for chaining', () => {
+    const bar = new Bar({ length: 40 })
+    expect(bar.log('msg', '→')).toBe(bar)
+  })
+
+  it('accepts a pre-colored ANSI glyph string', () => {
+    const bar = new Bar({ length: 40 })
+    const coloredGlyph = '\x1b[32m✔\x1b[0m'
+    bar.log('colored glyph', coloredGlyph)
+    expect(mockWrite).toHaveBeenCalledWith(`${coloredGlyph} colored glyph\n`)
   })
 })
 
@@ -606,6 +678,63 @@ describe('Bar resize', () => {
     bar.stop()
     expect(offSpy).toHaveBeenCalledWith('resize', expect.any(Function))
     offSpy.mockRestore()
+  })
+})
+
+describe('Bar.current', () => {
+  it('is null before any bar starts', () => {
+    expect(Bar.current).toBeNull()
+  })
+
+  it('is set to the bar on start()', () => {
+    const bar = new Bar({ length: 40 })
+    bar.start()
+    expect(Bar.current).toBe(bar)
+    bar.stop()
+  })
+
+  it('is cleared on stop()', () => {
+    const bar = new Bar({ length: 40 })
+    bar.start()
+    bar.stop()
+    expect(Bar.current).toBeNull()
+  })
+
+  it('is cleared on succeed()', () => {
+    const bar = new Bar({ length: 40 })
+    bar.start()
+    bar.succeed()
+    expect(Bar.current).toBeNull()
+  })
+
+  it('is cleared on fail()', () => {
+    const bar = new Bar({ length: 40 })
+    bar.start()
+    bar.fail()
+    expect(Bar.current).toBeNull()
+  })
+
+  it('is cleared on warn()', () => {
+    const bar = new Bar({ length: 40 })
+    bar.start()
+    bar.warn()
+    expect(Bar.current).toBeNull()
+  })
+
+  it('is cleared on info()', () => {
+    const bar = new Bar({ length: 40 })
+    bar.start()
+    bar.info()
+    expect(Bar.current).toBeNull()
+  })
+
+  it('does not clear current when a different instance terminates', () => {
+    const a = new Bar({ length: 40 })
+    const b = new Bar({ length: 40 })
+    a.start()
+    b.fail()
+    expect(Bar.current).toBe(a)
+    a.stop()
   })
 })
 

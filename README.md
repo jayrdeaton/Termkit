@@ -521,17 +521,40 @@ console.log('CPU  ' + Chart.Sparkline(samples, { style: (s) => Color.green(s) })
 
 Options: `min`, `max`, `style`.
 
-### Bar — ETA and rate tracking
+### Bar
 
-Attach progress tracking to an animated `Bar` with `.track()` and `.tick()`.
+Animated progress bar. Pass text as the first argument and options second:
 
 ```ts
 import { Bar } from 'termkit'
 
+const bar = new Bar('Processing…', { progress: 0 })
+bar.start()
+```
+
+Update the inline label while running:
+
+```ts
+bar.update('Uploading assets…')
+```
+
+Write a persistent log line while the bar keeps running. The default glyph is a faint `·`; pass any string — plain or pre-colored — as the second argument to override it:
+
+```ts
+bar.log('Processed batch 3')
+bar.log('Skipped 4 files', '→')
+bar.log('Error on item 12', Color.hex('#ef4444')('✖'))
+bar.log('No glyph line', '')
+```
+
+#### ETA and rate tracking
+
+Attach progress tracking with `.track()` and `.tick()`:
+
+```ts
 const total = 500
-const bar = new Bar({ progress: 0 })
+const bar = new Bar('Processing…', { progress: 0 })
 bar.track(total, { showRate: true, showEta: true, unit: 'files' })
-bar.message('Processing…')
 bar.start()
 
 for await (const item of items) {
@@ -539,7 +562,6 @@ for await (const item of items) {
   bar.tick()
 }
 
-bar.stop()
 bar.succeed(`Done — ${total} files processed`)
 ```
 
@@ -552,7 +574,23 @@ bar.rate  // units per second (number)
 bar.eta   // estimated seconds remaining (number)
 ```
 
-Options on `track(total, opts?)`: `unit` (label appended to rate), `showRate` (default `true`), `showEta` (default `true`). Both can also be set via constructor: `new Bar({ showRate: true, showEta: true, rateUnit: 'MB' })`.
+Options on `track(total, opts?)`: `unit` (label appended to rate), `showRate` (default `true`), `showEta` (default `true`). Both can also be set via constructor options: `new Bar('Uploading…', { showRate: true, showEta: true, rateUnit: 'MB' })`.
+
+#### Bar.current
+
+`Bar.current` follows the same pattern as `Spinner.current` — set on `.start()`, cleared on any terminal method. Use it to reach the active bar from deep in processing loops or error handlers:
+
+```ts
+const bar = new Bar('Processing…', { progress: 0 })
+bar.track(total)
+bar.start()
+
+// from a utility function
+Bar.current?.update('Flushing cache…')
+
+// in a catch block
+Bar.current?.fail(`Failed: ${err.message}`)
+```
 
 ### MultiBar
 
@@ -581,7 +619,7 @@ deploy.succeed('Deployed')
 multi.stop()
 ```
 
-Each `add()` call accepts the same options as `Bar` and returns a `Bar` instance — `.message()`, `.tick()`, `.track()`, `.progress`, and the completion methods all work the same way. Bars must be added before `.start()`.
+Each `add()` call accepts the same options as `Bar` and returns a `Bar` instance — `.update()`, `.tick()`, `.track()`, `.progress`, and the completion methods all work the same way. Bars must be added before `.start()`.
 
 Options: `interval`.
 
@@ -592,7 +630,7 @@ Animated spinner for indeterminate work. Shares the same completion API as `Bar`
 ```ts
 import { Spinner } from 'termkit'
 
-const spinner = new Spinner({ text: 'Loading…' })
+const spinner = new Spinner('Loading…')
 spinner.start()
 
 await doWork()
@@ -600,11 +638,29 @@ await doWork()
 spinner.succeed('Done')
 ```
 
+Pass options as the second argument:
+
+```ts
+const spinner = new Spinner('Thinking…', { frames: Spinner.FRAMES.dots, interval: 60 })
+```
+
 Update the inline label while running:
 
 ```ts
 spinner.update('Still working…')
 ```
+
+Use `prefix` and `suffix` to bookend the text independently of the spinner frame, which always stays at the far left. Spaces between the parts are automatic:
+
+```ts
+// renders: ⠋ 0 files copied
+const spinner = new Spinner('files copied')
+spinner.start()
+spinner.prefix(String(count))   // ⠋ 42 files copied
+spinner.suffix('(estimating…)') // ⠋ 42 files copied (estimating…)
+```
+
+All three — `update()`, `prefix()`, and `suffix()` — are chainable and can be called while the spinner is running.
 
 Write a persistent log line while the spinner keeps running. The default glyph is a faint `·`; pass any string — plain or pre-colored — as the second argument to override it:
 
@@ -618,20 +674,39 @@ spinner.log('Fetched 42 items', '')  // no glyph
 The completion methods accept a custom glyph color via `successColor`, `failColor`, `warnColor`, and `infoColor` — the glyph is colored, the message text is left unstyled:
 
 ```ts
-const spinner = new Spinner({ successColor: '#a855f7', failColor: '#ef4444' })
+const spinner = new Spinner('Deploying…', { successColor: '#a855f7', failColor: '#ef4444' })
 spinner.succeed('Build complete')   // purple ✔
 spinner.fail('Connection refused')  // red ✖
+```
+
+#### Spinner.current
+
+`Spinner.current` is automatically set to whichever spinner called `.start()` most recently, and cleared when it terminates. Use it to reach the active spinner from helpers, error handlers, or signal listeners without passing the instance around:
+
+```ts
+// top-level handler
+const spinner = new Spinner('Deploying…')
+spinner.start()
+
+// anywhere else in your app
+Spinner.current?.update('Uploading assets…')
+
+// in a catch block
+Spinner.current?.fail(`Deploy failed: ${err.message}`)
+
+// in a SIGTERM handler — ?. is intentional: a spinner may not be running
+process.on('SIGTERM', () => Spinner.current?.stop('Interrupted'))
 ```
 
 Built-in frame sets are available on `Spinner.FRAMES`:
 
 ```ts
-new Spinner({ frames: Spinner.FRAMES.dots, text: 'Thinking…' }).start()
+new Spinner('Thinking…', { frames: Spinner.FRAMES.dots }).start()
 ```
 
 Frame sets: `braille`, `dots`, `line`, `arrow`, `bounce`.
 
-Options: `frames`, `text`, `prefix`, `suffix`, `reverse`, `interval`, `colors`, `bgColors`, `colorCycle`, `shimmer`, `successColor`, `failColor`, `warnColor`, `infoColor`, `glyphs`.
+Options: `frames`, `prefix`, `suffix`, `reverse`, `interval`, `colors`, `bgColors`, `colorCycle`, `shimmer`, `successColor`, `failColor`, `warnColor`, `infoColor`, `glyphs`.
 
 ### Scrollbox
 

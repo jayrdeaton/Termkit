@@ -47,7 +47,7 @@ const UPDATE_START = TOTAL + 1000
 at(UPDATE_START - 500, () => { console.log(); console.log('— update() —') })
 
 at(UPDATE_START, () => {
-  const s = new Spinner({ frames: F.braille, interval: 80, text: 'Starting…' })
+  const s = new Spinner('Starting…', { frames: F.braille, interval: 80 })
   s.start()
   setTimeout(() => s.update('Fetching data…'),    800)
   setTimeout(() => s.update('Processing…'),       1600)
@@ -55,14 +55,34 @@ at(UPDATE_START, () => {
   setTimeout(() => { s.succeed('Finished') },     3200)
 })
 
+// ─── prefix() / suffix() ───────────────────────────────────────────────
+
+const PREFIX_START = UPDATE_START + 4500
+
+at(PREFIX_START - 500, () => { console.log(); console.log('— prefix() / suffix() —') })
+
+at(PREFIX_START, () => {
+  const total = 8
+  let count = 0
+  const s = new Spinner('files processed', { frames: F.braille, interval: 80 })
+  s.prefix('0').start()
+  const tick = setInterval(() => {
+    s.prefix(String(++count))
+    if (count >= total) {
+      clearInterval(tick)
+      setTimeout(() => s.succeed(`${total} files processed`), 400)
+    }
+  }, 400)
+})
+
 // ─── log() ────────────────────────────────────────────────────────────
 
-const LOG_START = UPDATE_START + 4500
+const LOG_START = PREFIX_START + 5500
 
 at(LOG_START - 500, () => { console.log(); console.log('— log() —') })
 
 at(LOG_START, () => {
-  const s = new Spinner({ frames: F.braille, interval: 80, text: 'Deploying…' })
+  const s = new Spinner('Deploying…', { frames: F.braille, interval: 80 })
   s.start()
   setTimeout(() => s.log('Building image'),                                      700)
   setTimeout(() => s.log('Pushed to registry', '→'),                            1400)
@@ -74,7 +94,7 @@ at(LOG_START, () => {
 
 // ─── Status methods ────────────────────────────────────────────────────
 
-const STATUS_START = LOG_START + 5500
+const STATUS_START = LOG_START + 6000
 
 at(STATUS_START - 500, () => { console.log(); console.log('— Status methods —') })
 
@@ -85,12 +105,12 @@ const statusExamples = [
   { method: 'info',    message: 'Listening on port 3000' },
 ]
 
-const statusSpinner = new Spinner({ frames: F.braille, interval: 80, text: 'Working...' })
+const statusSpinner = new Spinner('Working...', { frames: F.braille, interval: 80 })
 
 at(STATUS_START, () => {
   const all = [
     ...statusExamples,
-    { method: 'succeed', message: 'Custom color (purple)', spinner: new Spinner({ frames: F.braille, interval: 80, text: 'Working...', successColor: '#a855f7' }) },
+    { method: 'succeed', message: 'Custom color (purple)', spinner: new Spinner('Working...', { frames: F.braille, interval: 80, successColor: '#a855f7' }) },
   ]
   let i = 0
   function next() {

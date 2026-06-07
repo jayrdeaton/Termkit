@@ -16,10 +16,12 @@ const firstFrame = () => frames()[0]
 beforeEach(() => {
   mockWrite.mockClear()
   jest.useFakeTimers()
+  Spinner.current = null
 })
 
 afterEach(() => {
   jest.useRealTimers()
+  Spinner.current = null
 })
 
 describe('Spinner constructor', () => {
@@ -41,6 +43,23 @@ describe('Spinner constructor', () => {
     expect(Spinner.FRAMES.braille).toHaveLength(10)
     expect(Spinner.FRAMES.line).toHaveLength(4)
     expect(Spinner.FRAMES.arrow).toHaveLength(8)
+  })
+
+  it('accepts text as first argument', () => {
+    const s = new Spinner('Loading...')
+    expect(s.text).toBe('Loading...')
+  })
+
+  it('accepts text and options as separate arguments', () => {
+    const s = new Spinner('Loading...', { frames: Spinner.FRAMES.line, interval: 100 })
+    expect(s.text).toBe('Loading...')
+    expect(s.frames).toEqual(Spinner.FRAMES.line)
+    expect(s.interval).toBe(100)
+  })
+
+  it('text argument takes precedence over text in options', () => {
+    const s = new Spinner('from arg', { text: 'from options' })
+    expect(s.text).toBe('from arg')
   })
 })
 
@@ -80,12 +99,55 @@ describe('Spinner start/stop', () => {
 })
 
 describe('Spinner prefix/suffix', () => {
-  it('wraps frame with prefix and suffix strings', () => {
-    const s = new Spinner({ frames: ['-'], prefix: '(', suffix: ')', colors: [] })
+  it('places prefix and suffix around the text, after the frame', () => {
+    const s = new Spinner({ frames: ['-'], prefix: '5', text: 'items', suffix: 'done', colors: [] })
     s.start()
     const frame = firstFrame()
-    expect(frame).toContain('(-)')
+    expect(frame).toMatch(/- 5 items done/)
     s.stop()
+  })
+
+  it('frame stays at the leftmost position regardless of prefix', () => {
+    const s = new Spinner({ frames: ['-'], prefix: '99', text: 'loading', colors: [] })
+    s.start()
+    const frame = firstFrame()
+    expect(frame.trimStart()).toMatch(/^-/)
+    s.stop()
+  })
+
+  it('prefix() updates prefix in subsequent frames', () => {
+    const s = new Spinner({ frames: ['-'], text: 'items', colors: [] })
+    s.start()
+    s.prefix('5')
+    jest.runOnlyPendingTimers()
+    const frame = frames()[1]
+    expect(frame).toContain('- 5 items')
+    s.stop()
+  })
+
+  it('suffix() updates suffix in subsequent frames', () => {
+    const s = new Spinner({ frames: ['-'], text: 'loading', colors: [] })
+    s.start()
+    s.suffix('(42%)')
+    jest.runOnlyPendingTimers()
+    const frame = frames()[1]
+    expect(frame).toContain('- loading (42%)')
+    s.stop()
+  })
+
+  it('joins only non-empty parts so there are no double spaces', () => {
+    const s = new Spinner({ frames: ['-'], prefix: '5', suffix: 'items', colors: [] })
+    s.start()
+    const frame = firstFrame()
+    expect(frame).not.toContain('  ')
+    expect(frame).toContain('- 5 items')
+    s.stop()
+  })
+
+  it('prefix() and suffix() return this for chaining', () => {
+    const s = new Spinner()
+    expect(s.prefix('5')).toBe(s)
+    expect(s.suffix('items')).toBe(s)
   })
 })
 
@@ -291,6 +353,63 @@ describe('Spinner log method', () => {
     const coloredGlyph = '\x1b[32m✔\x1b[0m'
     s.log('colored glyph', coloredGlyph)
     expect(mockWrite).toHaveBeenCalledWith(`${coloredGlyph} colored glyph\n`)
+  })
+})
+
+describe('Spinner.current', () => {
+  it('is null before any spinner starts', () => {
+    expect(Spinner.current).toBeNull()
+  })
+
+  it('is set to the spinner on start()', () => {
+    const s = new Spinner()
+    s.start()
+    expect(Spinner.current).toBe(s)
+    s.stop()
+  })
+
+  it('is cleared on stop()', () => {
+    const s = new Spinner()
+    s.start()
+    s.stop()
+    expect(Spinner.current).toBeNull()
+  })
+
+  it('is cleared on succeed()', () => {
+    const s = new Spinner()
+    s.start()
+    s.succeed()
+    expect(Spinner.current).toBeNull()
+  })
+
+  it('is cleared on fail()', () => {
+    const s = new Spinner()
+    s.start()
+    s.fail()
+    expect(Spinner.current).toBeNull()
+  })
+
+  it('is cleared on warn()', () => {
+    const s = new Spinner()
+    s.start()
+    s.warn()
+    expect(Spinner.current).toBeNull()
+  })
+
+  it('is cleared on info()', () => {
+    const s = new Spinner()
+    s.start()
+    s.info()
+    expect(Spinner.current).toBeNull()
+  })
+
+  it('does not clear current when a different instance terminates', () => {
+    const a = new Spinner()
+    const b = new Spinner()
+    a.start()
+    b.fail()
+    expect(Spinner.current).toBe(a)
+    a.stop()
   })
 })
 

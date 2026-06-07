@@ -53,7 +53,7 @@ function fillBar(bar, durationMs) {
       const batch = Math.floor(Math.random() * 4) + 1
       counts[i] = Math.min(counts[i] + batch, total)
       w.tick(batch)
-      w.message(`worker-${i + 1}  ${counts[i]}/${total}`)
+      w.update(`worker-${i + 1}  ${counts[i]}/${total}`)
       if (counts[i] >= total) {
         clearInterval(intervals[i])
         w.succeed(`worker-${i + 1} done`)

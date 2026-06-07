@@ -1,5 +1,5 @@
 import { registerCleanup } from '@/utils/cleanup'
-import { ansiColor, applyShimmer, BLUE, colorText, dimColor, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
+import { ansiColor, applyShimmer, BLUE, colorText, dimColor, FAINT, formatColor, GREEN, HIDE_CURSOR, interpolateColor, parseHex, RED, RESET, type RgbColor, SHIMMER_SPEED, SHOW_CURSOR, YELLOW } from '@/utils/color'
 import { stringLength } from '@/utils/stringLength'
 
 export type BarMode = 'bounce' | 'loop' | 'loop-reverse'
@@ -35,6 +35,7 @@ export interface BarOptions {
 }
 
 export class Bar {
+  static current: Bar | null = null
   static readonly COLORS = {
     blueRed: ['#0000ff', '#ff0000'],
     redBlue: ['#ff0000', '#0000ff'],
@@ -93,38 +94,39 @@ export class Bar {
   private _rateUnit: string
   private _etaSuffix: string = ''
 
-  constructor(options: BarOptions = {}) {
+  constructor(text?: string | BarOptions, options?: BarOptions) {
+    const opts: BarOptions = typeof text === 'string' ? { ...options, text } : (text ?? {})
     this.running = false
     this.forwardMotion = true
-    this._autoLength = options.length === undefined
-    this.length = options.length ?? process.stdout.columns ?? 80
-    this.prefixString = options.prefix ?? '['
-    this.suffixString = options.suffix ?? ']'
-    this.character = options.character ?? '──'
-    this.beforeEmpty = options.before ?? ' '
-    this.afterEmpty = options.after ?? ' '
+    this._autoLength = opts.length === undefined
+    this.length = opts.length ?? process.stdout.columns ?? 80
+    this.prefixString = opts.prefix ?? '['
+    this.suffixString = opts.suffix ?? ']'
+    this.character = opts.character ?? '──'
+    this.beforeEmpty = opts.before ?? ' '
+    this.afterEmpty = opts.after ?? ' '
     this.position = 1
-    this.interval = options.interval ?? 35
-    this.mode = options.mode ?? 'bounce'
-    this.progress = options.progress
-    this.colorFill = options.colorFill ?? false
-    this.colorCycle = options.colorCycle ?? 0.5
-    this.shimmer = options.shimmer ?? 0
-    this.text = options.text ?? ''
-    this.reverse = options.reverse ?? false
-    this.onBounce = options.onBounce
-    this.onLoop = options.onLoop
-    this.onComplete = options.onComplete
-    this.colors = options.colors ?? ['#c026d3', '#e879f9']
-    this.bgColors = options.bgColors ?? []
-    this._successColor = options.successColor ?? GREEN
-    this._failColor = options.failColor ?? RED
-    this._warnColor = options.warnColor ?? YELLOW
-    this._infoColor = options.infoColor ?? BLUE
-    this._glyphs = options.glyphs ?? true
-    this._showRate = options.showRate ?? false
-    this._showEta = options.showEta ?? false
-    this._rateUnit = options.rateUnit ?? ''
+    this.interval = opts.interval ?? 35
+    this.mode = opts.mode ?? 'bounce'
+    this.progress = opts.progress
+    this.colorFill = opts.colorFill ?? false
+    this.colorCycle = opts.colorCycle ?? 0.5
+    this.shimmer = opts.shimmer ?? 0
+    this.text = opts.text ?? ''
+    this.reverse = opts.reverse ?? false
+    this.onBounce = opts.onBounce
+    this.onLoop = opts.onLoop
+    this.onComplete = opts.onComplete
+    this.colors = opts.colors ?? ['#c026d3', '#e879f9']
+    this.bgColors = opts.bgColors ?? []
+    this._successColor = opts.successColor ?? GREEN
+    this._failColor = opts.failColor ?? RED
+    this._warnColor = opts.warnColor ?? YELLOW
+    this._infoColor = opts.infoColor ?? BLUE
+    this._glyphs = opts.glyphs ?? true
+    this._showRate = opts.showRate ?? false
+    this._showEta = opts.showEta ?? false
+    this._rateUnit = opts.rateUnit ?? ''
   }
 
   get colors(): string[] {
@@ -183,6 +185,7 @@ export class Bar {
     if (this._isManaged) return
     if (!process.stdout.isTTY) return
     this.running = true
+    Bar.current = this
     process.stdout.write(HIDE_CURSOR)
     this._cleanupDeregister = registerCleanup(() => {
       this.running = false
@@ -209,6 +212,7 @@ export class Bar {
       this._managedFinalLine = message ?? ''
       return this
     }
+    if (Bar.current === this) Bar.current = null
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
@@ -223,8 +227,16 @@ export class Bar {
     return this
   }
 
-  message(string: string): this {
+  update(string: string): this {
     this.text = string
+    return this
+  }
+
+  log(message: string, glyph: string = `${FAINT}·${RESET}`): this {
+    if (process.stdout.isTTY) {
+      this.clear()
+    }
+    process.stdout.write(`${glyph ? `${glyph} ` : ''}${message}\n`)
     return this
   }
 
@@ -279,6 +291,7 @@ export class Bar {
 
   succeed(string?: string): this {
     this.running = false
+    if (Bar.current === this) Bar.current = null
     if (this._isManaged) {
       const glyph = this._glyphs ? colorText(this._successColor, '✔') + ' ' : ''
       this._managedFinalLine = `${glyph}${string ?? ''}`
@@ -301,6 +314,7 @@ export class Bar {
 
   fail(string?: string): this {
     this.running = false
+    if (Bar.current === this) Bar.current = null
     if (this._isManaged) {
       const glyph = this._glyphs ? colorText(this._failColor, '✖') + ' ' : ''
       this._managedFinalLine = `${glyph}${string ?? ''}`
@@ -323,6 +337,7 @@ export class Bar {
 
   warn(string?: string): this {
     this.running = false
+    if (Bar.current === this) Bar.current = null
     if (this._isManaged) {
       const glyph = this._glyphs ? colorText(this._warnColor, '⚠') + ' ' : ''
       this._managedFinalLine = `${glyph}${string ?? ''}`
@@ -345,6 +360,7 @@ export class Bar {
 
   info(string?: string): this {
     this.running = false
+    if (Bar.current === this) Bar.current = null
     if (this._isManaged) {
       const glyph = this._glyphs ? colorText(this._infoColor, 'ℹ') + ' ' : ''
       this._managedFinalLine = `${glyph}${string ?? ''}`

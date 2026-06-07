@@ -23,6 +23,7 @@ export interface SpinnerOptions {
 }
 
 export class Spinner {
+  static current: Spinner | null = null
   static readonly FRAMES = {
     braille: ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'],
     dots: ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'],
@@ -39,10 +40,11 @@ export class Spinner {
   reverse: boolean
   onSpin: (() => void) | undefined
 
+  private _prefix: string
+  private _suffix: string
+
   private running: boolean
   private frameIndex: number
-  private prefixString: string
-  private suffixString: string
   private _colors: string[] = []
   private _parsedColors: RgbColor[] = []
   private _bgColors: string[] = []
@@ -57,25 +59,26 @@ export class Spinner {
   private _glyphs: boolean
   private _cleanupDeregister: (() => void) | null = null
 
-  constructor(options: SpinnerOptions = {}) {
+  constructor(text?: string | SpinnerOptions, options?: SpinnerOptions) {
+    const opts: SpinnerOptions = typeof text === 'string' ? { ...options, text } : (text ?? {})
     this.running = false
     this.frameIndex = 0
-    this.frames = options.frames ?? (config.glyphs ? Spinner.FRAMES.braille : Spinner.FRAMES.line)
-    this.prefixString = options.prefix ?? ''
-    this.suffixString = options.suffix ?? ''
-    this.text = options.text ?? ''
-    this.reverse = options.reverse ?? false
-    this.interval = options.interval ?? 80
-    this.colorCycle = options.colorCycle ?? 1.0
-    this.shimmer = options.shimmer ?? 0
-    this.onSpin = options.onSpin
-    this.colors = options.colors ?? ['#c026d3', '#e879f9']
-    this.bgColors = options.bgColors ?? []
-    this._successColor = options.successColor ?? GREEN
-    this._failColor = options.failColor ?? RED
-    this._warnColor = options.warnColor ?? YELLOW
-    this._infoColor = options.infoColor ?? BLUE
-    this._glyphs = options.glyphs ?? config.glyphs
+    this.frames = opts.frames ?? (config.glyphs ? Spinner.FRAMES.braille : Spinner.FRAMES.line)
+    this._prefix = opts.prefix ?? ''
+    this._suffix = opts.suffix ?? ''
+    this.text = opts.text ?? ''
+    this.reverse = opts.reverse ?? false
+    this.interval = opts.interval ?? 80
+    this.colorCycle = opts.colorCycle ?? 1.0
+    this.shimmer = opts.shimmer ?? 0
+    this.onSpin = opts.onSpin
+    this.colors = opts.colors ?? ['#c026d3', '#e879f9']
+    this.bgColors = opts.bgColors ?? []
+    this._successColor = opts.successColor ?? GREEN
+    this._failColor = opts.failColor ?? RED
+    this._warnColor = opts.warnColor ?? YELLOW
+    this._infoColor = opts.infoColor ?? BLUE
+    this._glyphs = opts.glyphs ?? config.glyphs
   }
 
   get colors(): string[] {
@@ -99,6 +102,7 @@ export class Spinner {
   start(): void {
     if (!process.stdout.isTTY) return
     this.running = true
+    Spinner.current = this
     process.stdout.write(HIDE_CURSOR)
     this._cleanupDeregister = registerCleanup(() => {
       this.running = false
@@ -110,6 +114,7 @@ export class Spinner {
 
   stop(message?: string): this {
     this.running = false
+    if (Spinner.current === this) Spinner.current = null
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
@@ -125,8 +130,19 @@ export class Spinner {
     return this
   }
 
+  prefix(string: string): this {
+    this._prefix = string
+    return this
+  }
+
+  suffix(string: string): this {
+    this._suffix = string
+    return this
+  }
+
   succeed(string?: string): this {
     this.running = false
+    if (Spinner.current === this) Spinner.current = null
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
@@ -141,6 +157,7 @@ export class Spinner {
 
   fail(string?: string): this {
     this.running = false
+    if (Spinner.current === this) Spinner.current = null
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
@@ -155,6 +172,7 @@ export class Spinner {
 
   warn(string?: string): this {
     this.running = false
+    if (Spinner.current === this) Spinner.current = null
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
@@ -169,6 +187,7 @@ export class Spinner {
 
   info(string?: string): this {
     this.running = false
+    if (Spinner.current === this) Spinner.current = null
     this._cleanupDeregister?.()
     this._cleanupDeregister = null
     if (process.stdout.isTTY) {
@@ -210,9 +229,9 @@ export class Spinner {
 
   private run(): void {
     const frame = this.coloredFrame()
-    const t = this.text
-    const content = this.reverse ? (t ? `${t} ${frame}` : frame) : t ? `${frame} ${t}` : frame
-    const raw = `${this.prefixString}${content}${this.suffixString}`
+    const label = [this._prefix, this.text, this._suffix].filter(Boolean).join(' ')
+    const content = this.reverse ? (label ? `${label} ${frame}` : frame) : label ? `${frame} ${label}` : frame
+    const raw = content
     const displayLen = stringLength(raw)
     const padding = ' '.repeat(Math.max(0, this._lastLineLength - displayLen))
     this._lastLineLength = displayLen
